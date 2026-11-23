@@ -4,7 +4,7 @@
 (function () {
   const results = [];
   let current = '';
-  const group = n => { current = n; };
+  const group = n => { current = n; window.__lumiGroup = n + ' @' + Math.round(performance.now() / 1000) + ' s'; };
   const ok = (cond, name, detail) => results.push({ group: current, name, pass: !!cond, detail: cond ? '' : String(detail || '') });
   const eq = (a, b, name) => ok(JSON.stringify(a) === JSON.stringify(b), name, 'obtenu ' + JSON.stringify(a) + ' attendu ' + JSON.stringify(b));
   const has = (fn, name) => { try { fn(); ok(true, name); } catch (e) { ok(false, name, e && e.message); } };
@@ -321,7 +321,7 @@
     const scripts = [...document.scripts].map(s => s.getAttribute('src')).filter(x => x && x.startsWith('../js/')).map(x => x.replace('../', ''));
     const idx = await (await fetch('../index.html', { cache: 'no-store' })).text(); const idxScripts = [...idx.matchAll(/src="(js\/[^"]+)"/g)].map(m => m[1]);
     ok(idxScripts.every(s => files.includes(s)) && files.includes('css/lumi2.css'), 'tout script appelé par index.html est dans la liste du cache');
-    ok(/const VERSION = '3-1-\d+'/.test(swText), 'la version du cache est incrémentée (3-1-x)');
+    ok(/const VERSION = '3-[2-9]-\d+'/.test(swText), 'la version du cache est incrémentée (3-2-x)');
     ok(/new Request\(f, \{ cache: 'reload' \}\)/.test(swText) && /LEGACY = \/\^lumi-v/.test(swText) && /req\.url\.indexOf\(SCOPE\) !== 0/.test(swText), 'installation sans cache HTTP périmé ; anciens caches LUMI ciblés ; requêtes hors de LUMI ignorées');
     ok(/k\.indexOf\(PREFIX\) === 0 && k !== CACHE\) \|\| LEGACY\.test\(k\)/.test(swText), 'seuls les caches de LUMI (préfixe + anciens noms) sont supprimés');
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -331,21 +331,91 @@
       const legacyCache = await caches.open('lumi-v24'); await legacyCache.put('/x', new Response('ancien'));
       const reg = await navigator.serviceWorker.register('../sw.js', { scope: '../' });
       const sw = reg.installing || reg.waiting || reg.active;
-      await new Promise(res => { if (sw.state === 'activated') return res(); sw.addEventListener('statechange', () => { if (sw.state === 'activated') res(); }); setTimeout(res, 8000); });
+      await new Promise(res => { if (sw.state === 'activated') return res(); sw.addEventListener('statechange', () => { if (sw.state === 'activated') res(); }); setTimeout(res, 30000); });
+      for (let i = 0; i < 40 && !(await caches.keys()).some(k => k.indexOf('lumi-app::') === 0); i++) await wait(250);   // l'installation (27 fichiers dont des images) peut prendre quelques secondes
       const keys = await caches.keys(), mine = keys.filter(k => k.indexOf('lumi-app::') === 0);
       ok(keys.includes('autre-app-cache-v1'), 'le cache d’une autre application du domaine n’est PAS supprimé');
       ok(!keys.includes('lumi-v24'), 'l’ancien cache de LUMI est supprimé');
-      ok(mine.length === 1 && /::3-1-\d+$/.test(mine[0]), 'un seul cache LUMI courant, nommé avec l’adresse et la version');
+      ok(mine.length === 1 && /::3-[2-9]-\d+$/.test(mine[0]), 'un seul cache LUMI courant, nommé avec l’adresse et la version');
       const cache = await caches.open(mine[0]); const cached = await Promise.all(files.map(f => cache.match(new Request('../' + (f === './' ? '' : f)), { ignoreSearch: true }).then(x => !!x)));
       ok(cached.every(Boolean), 'tous les fichiers sont présents dans le cache (le jeu démarre sans connexion)', files.filter((f, i) => !cached[i]).join(', '));
       await caches.delete('autre-app-cache-v1'); await reg.unregister(); for (const k of await caches.keys()) if (k.indexOf('lumi-app::') === 0 && k.indexOf(location.origin) >= 0) await caches.delete(k);
     } else ok(true, 'service worker non disponible dans ce contexte : test ignoré');
 
+    // ============ 10b. Nouveau design V3.2 ============
+    group('Design V3.2 — mission du jour');
+    const info0 = () => null, CATS2 = Games.CATS, letters2 = I18n.raw('letters').map(l => l.l);
+    const lv = (c, g) => CATS2.find(x => x.id === c).games.find(x => x.id === g).lvl;
+    const m1 = Rules.dailyMission(CATS2, 4, '2026-05-10', 'pA', info0, letters2), m1b = Rules.dailyMission(CATS2, 4, '2026-05-10', 'pA', info0, letters2);
+    eq(m1, m1b, 'même profil, même date, même âge : même mission');
+    const days = new Set(), profs = new Set();
+    for (let d = 1; d <= 20; d++) { const x = Rules.dailyMission(CATS2, 4, '2026-05-' + String(d).padStart(2, '0'), 'pA', info0, letters2); days.add(x.cat + '/' + x.game); }
+    for (const pid of ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']) { const x = Rules.dailyMission(CATS2, 4, '2026-05-10', pid, info0, letters2); profs.add(x.cat + '/' + x.game); }
+    ok(days.size >= 5, 'la mission varie d’un jour à l’autre (' + days.size + ' missions différentes sur 20 jours)');
+    ok(profs.size >= 2, 'la mission varie d’un profil à l’autre');
+    let bad = 0; for (const age of [3, 4, 5]) for (let d = 1; d <= 40; d++) { const x = Rules.dailyMission(CATS2, age, '2026-06-' + String(d).padStart(2, '0'), 'pZ' + d, info0, letters2); if (!x || lv(x.cat, x.game) > age || (x.letter && !letters2.includes(x.letter))) bad++; }
+    ok(bad === 0, 'la mission respecte toujours l’âge, pointe vers un jeu existant et une lettre disponible dans la langue');
+    const base = Rules.dailyMission(CATS2, 5, '2026-07-01', 'pK', info0, letters2);
+    const after = Rules.dailyMission(CATS2, 5, '2026-07-01', 'pK', (c, g) => (c === base.cat && g === base.game ? { stars: 3, updated: '2026-07-01' } : null), letters2);
+    ok(after.cat === base.cat && after.game === base.game && after.done === true && base.done === false, 'la mission ne change pas quand l’enfant la joue ; elle passe à « accomplie »');
+    let mastered = 0; for (let d = 1; d <= 30; d++) { const x = Rules.dailyMission(CATS2, 5, '2026-08-' + String(d).padStart(2, '0'), 'pM', (c, g) => (c === 'letters' && g === 'listen' ? { stars: 3, updated: '2026-01-01' } : null), letters2); if (x.cat === 'letters' && x.game === 'listen') mastered++; }
+    ok(mastered === 0, 'un jeu déjà maîtrisé (3 étoiles un autre jour) n’est pas reproposé tant qu’il reste autre chose');
+    const lm = Rules.dailyMission(CATS2, 3, '2026-09-01', 'pL', info0, letters2); ok(lm !== null, 'une mission existe même à 3 ans');
+
+    group('Design V3.2 — accueil, mondes, navigation');
+    const gids = Games.GROUPS.reduce((a, g) => a.concat(g.cats), []);
+    eq(gids.slice().sort(), CATS2.map(c => c.id).sort(), 'les 8 mondes couvrent exactement les 10 catégories réelles (aucun module oublié ni inventé)');
+    eq(Games.GROUPS.length, 8, 'huit grandes cartes');
+    const A2 = window.LumiApp, P2 = Store.profile(), keep2 = { name: P2.name, age: P2.age, avatar: P2.avatar, progress: JSON.stringify(P2.progress), rewards: JSON.stringify(P2.rewards) };
+    const s2 = Store.s(), keepS = { lock: s2.lockMin, br: s2.breakMin, lang: s2.lang };
+    P2.name = 'Awa'; P2.age = 4; P2.avatar = 'abdou'; P2.progress = {}; P2.rewards = [];
+    A2.go('home'); const H = document.getElementById('app');
+    ok(H.querySelectorAll('.h-cats .gcat').length === 8, 'accueil : huit cartes');
+    ok(/Bonjour Awa !/.test(H.querySelector('.h-welcome').textContent) && /Prêt à apprendre en jouant \?/.test(H.querySelector('.h-welcome').textContent), 'message de bienvenue avec le prénom du profil actif');
+    ok(H.querySelector('.h-profile b').textContent === 'Awa' && H.querySelector('.h-profile img'), 'profil actif : prénom et portrait');
+    ok(/4 ans/.test(H.querySelector('.h-age').textContent), 'badge d’âge = âge du profil');
+    P2.age = 5; A2.go('home'); ok(/5 ans/.test(document.querySelector('.h-age').textContent), 'le badge suit l’âge du profil');
+    ok(document.querySelector('.h-start') && /Commencer/.test(document.querySelector('.h-start').textContent) && document.querySelector('.h-parents') && document.querySelector('.h-mission'), 'boutons Commencer, Parents et mission présents');
+    P2.progress = { 'g:letters:listen': { stars: 3, plays: 1, errors: 0, hints: 0, last: 3, updated: '2026-01-01' }, 'g:numbers:count': { stars: 2, plays: 1, errors: 0, hints: 0, last: 2, updated: '2026-01-01' } }; A2.go('home');
+    ok(/5 étoiles/.test(document.querySelector('.h-prog .chip2').textContent), 'étoiles affichées = étoiles réellement gagnées (3 + 2)');
+    ok(document.querySelector('.g-letters .gs').textContent.indexOf('★ 3/9') >= 0 && document.querySelector('.g-numbers .gs').textContent.indexOf('★ 2/12') >= 0, 'étoiles par monde calculées depuis la progression');
+    P2.progress = {}; A2.go('home'); ok(/0 étoiles/.test(document.querySelector('.h-prog .chip2').textContent) && /0 \/ \d+ trophées/.test(document.querySelector('.h-prog').textContent), 'profil vierge : 0 étoile, 0 trophée (aucune donnée fictive)');
+    let opened = 0, listed = 0;
+    for (const g of Games.GROUPS) { A2.go('home'); document.querySelector('.gcat[data-id="' + g.id + '"]').click(); if (A2.screen === 'grp') { opened++; listed += document.querySelectorAll('.hub .gcard').length; } }
+    ok(opened === 8 && listed === CATS2.reduce((a, c) => a + c.games.length, 0), 'chaque carte ouvre son monde ; tous les jeux et histoires sont accessibles (' + listed + ')');
+    let started = 0; A2.go('grp', { id: 'shapes' }); const ids2 = [...document.querySelectorAll('.hub .gcard')].map(b => [b.dataset.c, b.dataset.g]);
+    ids2.forEach(([c0, g0]) => { A2.go('grp', { id: 'shapes' }); document.querySelector('.hub .gcard[data-c="' + c0 + '"][data-g="' + g0 + '"]').click(); if (A2.screen === 'play') started++; });
+    ok(started === 7, 'les jeux de « Formes et logique » (deux catégories) démarrent tous');
+    const tabs = ['home', 'games', 'trophies', 'progress'], navOk = [];
+    tabs.forEach((t0, i) => { A2.go('home'); document.querySelectorAll('.nav4 button')[i].click(); navOk.push(A2.screen === t0 && document.querySelector('.nav4 button.on') === document.querySelectorAll('.nav4 button')[i] && document.querySelector('.nav4 [aria-current="page"]')); });
+    ok(document.querySelectorAll('.nav4 button').length === 4 && navOk.every(Boolean), 'quatre onglets, tous fonctionnels, l’onglet actif est signalé (aria-current)');
+    A2.go('progress'); ok(!!document.querySelector('.pg-row') && !/essai|aide|minute/i.test(document.querySelector('#app').textContent), 'page Progrès : réussites simples, aucune statistique détaillée (réservée aux parents)');
+    A2.go('home'); document.querySelector('.h-mission').click(); const mg = A2.game; ok(A2.screen === 'play' && mg && lv(mg.cat, mg.gid) <= P2.age, 'la mission démarre un vrai jeu adapté à l’âge');
+    A2.go('home'); document.querySelector('.h-start').click(); const sg = A2.game; ok(A2.screen === 'play' && lv(sg.cat, sg.gid) <= P2.age, '« Commencer » utilise la sélection automatique (filtre d’âge respecté)');
+    P2.age = 3; A2.go('home'); document.querySelector('.h-start').click(); ok(A2.screen === 'play' && A2.game.gd.lvl <= 3, 'à 3 ans, « Commencer » ne propose que des jeux de niveau 3');
+    s2.lockMin = 1; P2.playTime[Store.today()] = 600; A2.go('home'); document.querySelector('.h-start').click(); ok(A2.screen === 'lock', '« Commencer » respecte la limite de temps (écran verrouillé)');
+    A2.go('home'); document.querySelector('.h-mission').click(); ok(A2.screen === 'lock', 'la mission respecte aussi la limite de temps');
+    s2.lockMin = keepS.lock; delete P2.playTime[Store.today()];
+    I18n.setLang('en'); s2.lang = 'en'; A2.go('home'); const txt = document.querySelector('.home3').textContent;
+    ok(/Start/.test(txt) && /Today’s mission:/.test(txt) && /Hello Awa!/.test(txt) && !/[éèêàùç]/.test(txt.replace(/Awa/g, '')), 'accueil en anglais : aucun texte français résiduel');
+    A2.go('games'); ok(!/[éèêàùç]/.test(document.querySelector('#app').textContent), 'onglet Jeux en anglais : aucun texte français');
+    I18n.setLang('fr'); s2.lang = keepS.lang; P2.name = keep2.name; P2.age = keep2.age; P2.avatar = keep2.avatar; P2.progress = JSON.parse(keep2.progress); P2.rewards = JSON.parse(keep2.rewards); Store.save(); A2.go('home');
+
+    group('Design V3.2 — images optimisées et hors ligne');
+    const imgs = ['assets/img/hero-941.jpg', 'assets/img/hero-640.jpg', 'assets/img/avatar-boy.jpg', 'assets/img/avatar-girl.jpg', 'assets/img/leaves.svg'];
+    const sizes = await Promise.all(imgs.map(f => fetch('../' + f, { cache: 'no-store' }).then(r => r.ok ? r.blob().then(b => b.size) : 0)));
+    ok(sizes.every(s => s > 0), 'toutes les images existent', imgs.filter((f, i) => !sizes[i]).join(', '));
+    ok(sizes[0] < 130000 && sizes[1] < 80000 && sizes[2] < 25000 && sizes[3] < 25000 && sizes[4] < 5000, 'images légères pour les téléphones : ' + sizes.map(s => Math.round(s / 1024) + ' Ko').join(', '));
+    ok(imgs.every(f => swText.indexOf("'" + f + "'") >= 0) && swText.indexOf("'css/design.css'") >= 0 && swText.indexOf("'js/home.js'") >= 0, 'images, feuille de style et composant d’accueil sont dans le cache hors ligne');
+    const heroTag = await (await fetch('../js/home.js', { cache: 'no-store' })).text();
+    ok(/srcset=/.test(heroTag) && /decoding="async"/.test(heroTag) && /width="941" height="435"/.test(heroTag) && /alt=""/.test(heroTag), 'image du héros : srcset, décodage asynchrone, dimensions réservées, décorative (alt vide)');
+    ok(!/https?:\/\//.test(heroTag.replace(/http:\/\/www\.w3\.org[^'"]*/g, '')) && !/url\(\s*https?:/.test(await (await fetch('../css/design.css', { cache: 'no-store' })).text()), 'aucune ressource externe : chemins relatifs compatibles GitHub Pages');
+
     // ============ 11. Application ============
     group('Application — écrans');
     const A = window.LumiApp;
     if (A) {
-      has(() => { A.go('home'); if (!document.querySelector('.cat')) throw new Error('accueil vide'); }, 'accueil affiché');
+      has(() => { A.go('home'); if (document.querySelectorAll('.h-cats .gcat').length !== 8) throw new Error('accueil : 8 cartes attendues'); }, 'accueil affiché');
       has(() => { A.go('trophies'); if (!document.querySelector('.coll')) throw new Error('trophées vides'); }, 'trophées affichés');
       has(() => { A.go('recre'); A.go('missions'); A.go('garage'); }, 'écrans de récré affichés');
       const done = []; Games.CATS.forEach(c => c.games.forEach(g => { try { A.startGame(c.id, g.id); done.push(document.querySelector('.play') ? 1 : 0); } catch (e) { done.push(0); } }));
