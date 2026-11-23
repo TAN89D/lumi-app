@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tests LUMI V3</title>
+<style>body{font-family:system-ui,sans-serif;margin:16px;background:#fbf3dc;color:#3a2a1c}h1{margin:0 0 4px}.sum{font-weight:800;margin:8px 0 16px}.ok{color:#2e7d32}.ko{color:#c62828}
+h2{font-size:1rem;margin:14px 0 4px;border-bottom:2px solid #d9ceaa}li{list-style:none;margin:2px 0}small{color:#8a7c52}#app{position:absolute;left:-9999px;top:0;width:420px;height:800px}#modal{display:none}</style></head>
+<body><h1>Tests automatisés — LUMI V3</h1><div class="sum" id="sum">Exécution…</div><div id="out"></div>
+<div id="app"></div><div id="modal"></div>
+<script src="../js/content.js"></script><script src="../js/i18n.js"></script><script src="../js/store.js"></script><script src="../js/rules.js"></script><script src="../js/skills.js"></script>
+<script src="../js/art.js"></script><script src="../js/draw.js"></script><script src="../js/audio.js"></script><script src="../js/minigames.js"></script><script src="../js/games.js"></script><script src="../js/main.js"></script>
+<script src="tests.js"></script>
+<script>
+(async () => {
+  let res; try { res = await window.__runLumiTests(); } catch (e) { document.getElementById('sum').innerHTML = '<span class="ko">Le lanceur de tests a planté : ' + e.message + '</span>'; return; }
+  const pass = res.filter(r => r.pass).length, fail = res.length - pass;
+  window.__lumiTestResult = { total: res.length, pass, fail, failures: res.filter(r => !r.pass) };
+  document.getElementById('sum').innerHTML = '<span class="' + (fail ? 'ko' : 'ok') + '">' + pass + ' / ' + res.length + ' tests réussis' + (fail ? ' — ' + fail + ' échec(s)' : '') + '</span>';
+  let h = '', g = '';
+  res.forEach(r => { if (r.group !== g) { g = r.group; h += '</ul><h2>' + g + '</h2><ul>'; } h += '<li class="' + (r.pass ? 'ok' : 'ko') + '">' + (r.pass ? '✔' : '✘') + ' ' + r.name + (r.pass ? '' : ' <small>' + r.detail + '</small>') + '</li>'; });
+  document.getElementById('out').innerHTML = h + '</ul>';
+})();
+</script></body></html>
