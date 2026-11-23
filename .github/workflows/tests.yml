@@ -1,0 +1,39 @@
+name: Tests LUMI
+
+on:
+  push:
+    branches: ['v3.1', 'v3']
+  pull_request:
+    branches: ['v3', 'main']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Installer les dépendances de test (l'application, elle, n'en a aucune)
+        run: npm install --no-audit --no-fund
+      - name: Installer les navigateurs (Chromium et WebKit)
+        run: npx playwright install --with-deps chromium webkit
+      - name: Lancer les tests (Chromium, Android Pixel 7, iPhone 14, iPad en émulation)
+        run: npx playwright test
+      - name: Conserver le rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-playwright
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
