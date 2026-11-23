@@ -159,11 +159,12 @@ body.contrast .h-welcome,body.contrast .h-mission,body.contrast .gcat{border-col
 .guide{position:relative;margin:2px auto 6px;max-width:420px;min-height:200px}
 /* l'image contient une ancienne bulle : on la découpe (clip-path) pour ne garder que le personnage ; la vraie bulle (texte réel, traduit) est en HTML */
 .guide img{display:block;width:66%;height:auto;margin-left:0;clip-path:polygon(0 0,40% 0,40% 33%,50% 37%,100% 45%,100% 100%,0 100%);-webkit-mask-image:radial-gradient(ellipse 62% 70% at 38% 66%,#000 58%,transparent 100%);mask-image:radial-gradient(ellipse 62% 70% at 38% 66%,#000 58%,transparent 100%)}
-.guide .bubble{position:absolute;right:0;top:0;width:56%;display:flex;align-items:center;gap:8px;text-align:left;background:#fff;color:var(--ink2);font-weight:900;font-size:clamp(1rem,4.6vw,1.3rem);line-height:1.15;padding:12px 14px;border-radius:26px;border:3px solid #e3c7ff;box-shadow:0 5px 0 #cdb0f0,0 10px 14px rgba(0,0,0,.18);min-height:92px;z-index:2}
-.guide .bubble::before{content:"";position:absolute;left:-14px;bottom:18px;width:22px;height:22px;background:#fff;border-left:3px solid #e3c7ff;border-bottom:3px solid #e3c7ff;transform:rotate(45deg) skew(10deg,10deg)}
-.guide .bubble .spk{flex:none;width:38px;height:38px;border-radius:50%;background:linear-gradient(#b774f0,var(--violet2));display:flex;align-items:center;justify-content:center}
-.guide .bubble .spk svg{width:22px;height:22px;color:#fff}
-.guide .bubble.pulse{animation:lumi-bob .7s ease-in-out 3}
+.guide .bubble{position:absolute;right:0;top:0;width:56%}
+.bubble{display:flex;align-items:center;gap:8px;text-align:left;background:#fff;color:var(--ink2);font-weight:900;font-size:clamp(1rem,4.6vw,1.3rem);line-height:1.15;padding:12px 14px;border-radius:26px;border:3px solid #e3c7ff;box-shadow:0 5px 0 #cdb0f0,0 10px 14px rgba(0,0,0,.18);min-height:92px;z-index:2}
+.bubble::before{content:"";position:absolute;left:-14px;bottom:18px;width:22px;height:22px;background:#fff;border-left:3px solid #e3c7ff;border-bottom:3px solid #e3c7ff;transform:rotate(45deg) skew(10deg,10deg)}
+.guide .bubble .spk,.quiz .bubble .spk,button.bubble .spk{flex:none;width:38px;height:38px;border-radius:50%;background:linear-gradient(#b774f0,var(--violet2));display:flex;align-items:center;justify-content:center}
+.guide .bubble .spk svg,.quiz .bubble .spk svg,button.bubble .spk svg{width:22px;height:22px;color:#fff}
+.bubble.pulse{animation:lumi-bob .7s ease-in-out 3}
 .tile{transition:transform .12s}
 .tile:active{transform:translateY(4px) scale(.98)}
 
@@ -220,7 +221,75 @@ body.contrast .h-welcome,body.contrast .h-mission,body.contrast .gcat{border-col
 button:active{transition:transform .08s}
 
 /* animations réduites ou mode calme : tout est immobile (le contenu reste identique) */
-@media (prefers-reduced-motion:reduce){.w-chars,.h-chars,.lion3,.gcat,.w-msg,.book svg,.book .emj,.result3 .big-stars .star.on,.guide .bubble.pulse{animation:none!important}}
-body.calm .w-chars,body.calm .h-chars,body.calm .lion3,body.calm .gcat,body.calm .w-msg,body.calm .book svg,body.calm .book .emj,body.calm .result3 .big-stars .star.on,body.calm .guide .bubble.pulse{animation:none!important}
+@media (prefers-reduced-motion:reduce){.w-chars,.h-chars,.lion3,.gcat,.w-msg,.book svg,.book .emj,.result3 .big-stars .star.on,.bubble.pulse{animation:none!important}}
+body.calm .w-chars,body.calm .h-chars,body.calm .lion3,body.calm .gcat,body.calm .w-msg,body.calm .book svg,body.calm .book .emj,body.calm .result3 .big-stars .star.on,body.calm .bubble.pulse{animation:none!important}
 body.contrast .w-msg,body.contrast .result3,body.contrast .plist,body.contrast .ptabs{border-color:#000}
 @media (min-width:700px){.guide{max-width:520px}.result3{max-width:560px;margin:0 auto}}
+/* =====================================================================
+   V3.4 — Lumi vectoriel animé + question de compréhension des histoires
+   ===================================================================== */
+@keyframes l-breath{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.025)}}
+@keyframes l-blink{0%,92%,100%{transform:scaleY(0)}95%,97%{transform:scaleY(1)}}
+@keyframes l-wave{from{transform:rotate(-132deg)}to{transform:rotate(-168deg)}}
+@keyframes l-cheer-r{from{transform:rotate(-146deg)}to{transform:rotate(-170deg)}}
+@keyframes l-cheer-l{from{transform:rotate(146deg)}to{transform:rotate(170deg)}}
+@keyframes l-hop{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+@keyframes l-talk{from{transform:scaleY(.25)}to{transform:scaleY(1)}}
+@keyframes l-ear{0%,100%{transform:rotate(0)}30%{transform:rotate(-14deg)}70%{transform:rotate(10deg)}}
+@keyframes l-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.lumi{display:block;width:100%;height:auto;overflow:visible}
+.lumi *{transform-box:fill-box}
+.lumi .l-body{transform-origin:50% 100%;animation:l-breath 4.2s ease-in-out infinite}
+.lumi .l-head{transform-origin:50% 92%;transition:transform .3s}
+.lumi .l-arm{transform-origin:50% 0;transition:transform .35s ease}
+.lumi .l-ear{transform-origin:50% 85%}
+.lumi .l-lid{transform-origin:50% 0;transform:scaleY(0);animation:l-blink 5.5s infinite}
+.lumi .l-brow{transition:transform .3s}
+.lumi .m{display:none}.lumi .m-rest{display:inline}
+.lumi .m-talk{transform-origin:50% 50%}
+/* poses (valables aussi sans animation : image statique de secours) */
+.lumi[data-state=wave] .l-arm-r{transform:rotate(-150deg)}
+.lumi[data-state=cheer] .l-arm-r{transform:rotate(-158deg)}.lumi[data-state=cheer] .l-arm-l{transform:rotate(158deg)}
+.lumi[data-state=talk] .m-rest,.lumi[data-state=happy] .m-rest,.lumi[data-state=cheer] .m-rest,.lumi[data-state=oops] .m-rest{display:none}
+.lumi[data-state=talk] .m-talk{display:inline}.lumi[data-state=happy] .m-happy,.lumi[data-state=cheer] .m-happy{display:inline}.lumi[data-state=oops] .m-oops{display:inline}
+.lumi[data-state=happy] .l-brow,.lumi[data-state=cheer] .l-brow{transform:translateY(-3px)}
+.lumi[data-state=oops] .l-head{transform:rotate(5deg)}.lumi[data-state=oops] .l-brow-l{transform:rotate(-12deg)}.lumi[data-state=oops] .l-brow-r{transform:rotate(12deg)}
+/* mouvements */
+.lumi[data-state=wave] .l-arm-r{animation:l-wave .65s ease-in-out infinite alternate}
+.lumi[data-state=cheer] .l-arm-r{animation:l-cheer-r .5s ease-in-out infinite alternate}.lumi[data-state=cheer] .l-arm-l{animation:l-cheer-l .5s ease-in-out infinite alternate}
+.lumi[data-state=cheer]{animation:l-hop .5s ease-in-out infinite alternate}
+.lumi[data-state=happy] .l-ear-l,.lumi[data-state=cheer] .l-ear-l{animation:l-ear .55s ease-in-out 3}.lumi[data-state=happy] .l-ear-r,.lumi[data-state=cheer] .l-ear-r{animation:l-ear .55s .1s ease-in-out 3 reverse}
+.lumi[data-state=talk][data-speaking="1"] .m-talk{animation:l-talk .28s ease-in-out infinite alternate}
+.lumi[data-state=oops] .l-head{animation:l-shake .4s 1}
+/* animations coupées : réduire les animations (système) ou mode calme (réglage parent) -> poses fixes, aucune boucle */
+@media (prefers-reduced-motion:reduce){.lumi,.lumi *{animation:none!important;transition:none!important}.lumi .l-lid{transform:scaleY(0)}}
+body.calm .lumi,body.calm .lumi *{animation:none!important;transition:none!important}body.calm .lumi .l-lid{transform:scaleY(0)}
+
+/* emplacements */
+.mascot-slot{flex:none}
+.w-msg{display:flex;align-items:center;gap:10px;text-align:left}
+.w-msg .w-txt{flex:1;text-align:center}
+.w-lumi{width:96px;margin:-30px 0 -14px -4px}
+.r-lumi{width:min(58%,230px);margin:-4px auto 0}
+.book .bk-title{display:flex;align-items:center;justify-content:center;gap:10px}.book .bk-txt{text-align:center}.b-lumi{width:64px;margin:-6px 0 -8px}
+
+/* question de compréhension */
+.quiz{display:flex;flex-direction:column;gap:12px;padding:0 0 14px}
+.q-top{display:flex;align-items:center;gap:8px}
+.q-lumi{width:34%;max-width:150px}
+.bubble.q-bubble{position:relative;right:auto;top:auto;flex:1;width:auto;min-height:96px}
+.q-bubble small{display:block;font-size:.78rem;color:#8a6a3a;font-weight:900}
+.q-choices{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(104px,1fr))}
+.q-ch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:150px;padding:12px 6px;border-radius:26px;background:linear-gradient(#fffaf0,#fff0d0);border:4px solid #e5d0f7;box-shadow:0 7px 0 #c9a9ea,0 12px 14px rgba(0,0,0,.12);font-weight:900;color:var(--ink2);transition:transform .12s}
+.q-ch:active{transform:translateY(4px)}
+.q-ch .qe{font-size:3.3rem;line-height:1}.q-ch .ql{font-size:1.02rem;line-height:1.15;text-align:center}
+.q-ch.good{background:#e1f8c6;border-color:#4fc02a;box-shadow:0 0 0 6px rgba(111,224,62,.45),0 7px 0 #3a9a1b}
+.q-ch.bad{opacity:.55;animation:l-shake .35s 1}
+.q-skip{align-self:center;display:inline-flex;align-items:center;gap:6px;min-height:54px;padding:8px 24px;border-radius:30px;background:rgba(255,255,255,.9);border:3px solid #e3c7ff;color:var(--violet2);font-weight:900;font-size:1.05rem;box-shadow:0 4px 0 #cdb0f0}
+.q-skip svg{width:18px;height:18px}
+@media (prefers-reduced-motion:reduce){.q-ch.bad{animation:none}}
+body.calm .q-ch.bad{animation:none}
+/* V3.4 : groupes de mangues à associer à un chiffre */
+.tile .grp{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:center;width:100%;padding:6px}
+.tile .grp .it{display:block;width:38%;aspect-ratio:1}
+.tile .grp .it svg{width:100%;height:100%}
