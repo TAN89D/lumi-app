@@ -8,7 +8,7 @@
 window.Skills = (function () {
   const MAP = {
     'letters:listen': ['letters.recognize'], 'letters:drag': ['letters.recognize'], 'letters:trace': ['letters.write'],
-    'numbers:count': ['numbers.count'], 'numbers:basket': ['numbers.count', 'numbers.compose'], 'numbers:plus': ['numbers.compose'], 'numbers:trace': ['numbers.write'],
+    'numbers:count': ['numbers.count'], 'numbers:match': ['numbers.count'], 'numbers:basket': ['numbers.count', 'numbers.compose'], 'numbers:plus': ['numbers.compose'], 'numbers:trace': ['numbers.write'],
     'colors:touch': ['colors.name'], 'colors:sort': ['colors.name'], 'colors:mix': ['colors.mix'],
     'shapes:drag': ['shapes.recognize'], 'shapes:find': ['shapes.recognize'], 'shapes:build': ['shapes.build', 'logic.spatial'],
     'logic:suite': ['logic.pattern'], 'logic:odd': ['logic.classify'], 'logic:puzzle': ['logic.spatial'], 'logic:memory': ['logic.memory'],

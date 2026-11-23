@@ -34,7 +34,7 @@ window.Home = (function () {
   const welcome = x => `<div class="welcome">
       <div class="w-logo"><h1 class="logo">LUMI</h1><div class="sign">${esc(x.t('tagline'))}</div></div>
       <img class="w-chars" src="${IMG}hero-941.jpg" srcset="${IMG}hero-640.jpg 640w, ${IMG}hero-941.jpg 941w" sizes="(max-width:760px) 100vw, 760px" width="941" height="435" alt="" decoding="async" fetchpriority="high">
-      <section class="w-msg"><b>${esc(x.t('welcome.title'))}</b><span>${esc(x.t('welcome.sub'))}</span></section>
+      <section class="w-msg">${x.mascot ? `<div class="mascot-slot w-lumi" data-state="wave" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : ''}<div class="w-txt"><b>${esc(x.t('welcome.title'))}</b><span>${esc(x.t('welcome.sub'))}</span></div></section>
       <button class="h-start" data-act="begin"><span class="ic">${x.IC.play}</span>${esc(x.t('btn.start'))}</button>
       <button class="w-parents" data-act="go" data-to="gate"><span class="ic">${x.IC.people}</span>${esc(x.t('btn.parentsArea'))}</button>
     </div>`;
@@ -104,7 +104,7 @@ window.Home = (function () {
   const guide = (x, ask) => `<div class="guide"><img src="${IMG}guide-boy.jpg" width="540" height="490" alt="" decoding="async"><button class="bubble" data-act="say" aria-label="${esc(x.t('play'))}"><span class="spk">${x.IC.speaker}</span><span>${esc(ask)}</span></button></div>`;
 
   // ----- écran de réussite : le nombre d'étoiles est celui réellement gagné -----
-  const result = (x, r) => `<div class="result3"><img class="lion3" src="${IMG}lion-cheer.jpg" width="550" height="402" alt="" decoding="async">
+  const result = (x, r) => `<div class="result3">${x.mascot ? `<div class="mascot-slot r-lumi" data-state="cheer" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : `<img class="lion3" src="${IMG}lion-cheer.jpg" width="550" height="402" alt="" decoding="async">`}
       <h1>${esc(r.name ? x.t('res.bravo', { name: r.name }) : x.t('res.bravo0'))}</h1><p class="sub">${esc(x.t('res.well'))}</p>
       <div class="big-stars" role="img" aria-label="${esc(x.t('res.stars', { n: r.stars }))}">${[0, 1, 2].map(i => `<span class="star ${i < r.stars ? 'on' : ''}" style="animation-delay:${i * 0.25}s">★</span>`).join('')}</div>
       ${r.reward ? `<div class="newc"><div class="pic">${r.reward}</div><span>${esc(x.t('newReward'))}</span></div>` : ''}${r.recre || ''}
@@ -112,8 +112,14 @@ window.Home = (function () {
       <div class="row3"><button class="ib" data-act="game" data-c="${r.cat}" data-g="${r.gid}" aria-label="${esc(x.t('replay'))}">${x.IC.replay}</button><button class="ib" data-act="go" data-to="home" aria-label="${esc(x.t('tab.home'))}">${x.IC.home}</button></div></div>`;
 
   // ----- livre illustré des histoires (écran 5) -----
-  const book = (x, o) => `<div class="book">${o.scene}<div class="bk-title"><b>${esc(o.title)}</b><small>${esc(x.t('story.progress', { a: o.page + 1, b: o.pages }))}</small></div>
+  const book = (x, o) => `<div class="book">${o.scene}<div class="bk-title">${x.mascot ? `<div class="mascot-slot b-lumi" data-state="rest" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : ''}<div class="bk-txt"><b>${esc(o.title)}</b><small>${esc(x.t('story.progress', { a: o.page + 1, b: o.pages }))}</small></div></div>
       <div class="pbar2 small" role="progressbar" aria-valuemin="0" aria-valuemax="${o.pages}" aria-valuenow="${o.page + 1}"><i style="width:${Math.round((o.page + 1) / o.pages * 100)}%"></i></div>${o.text}${o.tools}</div>`;
 
-  return { home, games, group, progressPage, nav, activeTab, avatar, welcome, profilesPage, guide, result, book };
+  // ----- question de compréhension (fin d'une histoire) : question illustrée, 2 ou 3 réponses, « Passer » toujours possible -----
+  const quiz = (x, qz) => `<div class="quiz"><div class="q-top">${x.mascot ? `<div class="mascot-slot q-lumi" data-state="rest" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : ''}
+      <button class="bubble q-bubble" id="qbub" data-act="qsay" aria-label="${esc(x.t('quiz.listen'))}"><span class="spk">${x.IC.speaker}</span><span><small>${esc(x.t('quiz.title'))}</small>${esc(qz.q)}</span></button></div>
+      <div class="q-choices c${qz.choices.length}" role="group" aria-label="${esc(qz.q)}">${qz.choices.map((c, i) => `<button class="q-ch" data-act="qpick" data-i="${i}"><span class="qe" aria-hidden="true">${c.e}</span><span class="ql">${esc(c.label)}</span></button>`).join('')}</div>
+      <button class="q-skip" data-act="qskip">${esc(x.t('quiz.skip'))} ${x.IC.play}</button></div>`;
+
+  return { home, games, group, progressPage, nav, activeTab, avatar, welcome, profilesPage, guide, result, book, quiz };
 })();

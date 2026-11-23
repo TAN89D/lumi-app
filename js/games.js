@@ -27,6 +27,10 @@ window.Games = (function () {
       return { type: 'choose', ask: line('ask.count'), show: mangoes(k), choices: shuffle(others(pool, k, n)).map(v => ({ h: String(v), ok: v === k, say: line('say.count', { m: mg(k), n: k }) })) };
     });
   };
+  // V3.4 — quantités à associer : on voit un chiffre, on choisit le groupe de mangues qui correspond (même plafond d'âge que « Compte les mangues »)
+  const qtyMatch = (n, ctx) => { const mx = cap(ctx).countMax, pool = Array.from({ length: Math.max(mx, 3) }, (_, i) => i + 1);
+    return [0, 1, 2, 3].map(() => { const k = between(1, mx); return { type: 'choose', ask: line('ask.qty', { n: k, m: mg(k) }), show: `<div class="bigl">${k}</div>`,
+      choices: shuffle(others(pool, k, n)).map(v => ({ h: `<span class="grp">${mangoes(v)}</span>`, ok: v === k, say: line('say.count', { m: mg(k), n: k }) })) }; }); };
   const plus = (n, ctx) => {
     const mx = cap(ctx).plusMax, combos = [[1, 1], [2, 1], [1, 3], [2, 2], [3, 2], [4, 2]].filter(([a, b]) => a + b <= mx);
     return shuffle(combos).slice(0, 3).map(([a, b]) => {
@@ -115,7 +119,7 @@ window.Games = (function () {
   const G = (id, ic, make, lvl) => ({ id, ic, make, lvl: lvl || 3 });
   const CATS = [
     { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4)] },
-    { id: 'numbers', c: 'sun', art: 'c_numbers', games: [G('count', 'mango', counting), G('basket', 'basket', fill), G('plus', 'apple', plus, 5), G('trace', 'c_art', traceN, 4)] },
+    { id: 'numbers', c: 'sun', art: 'c_numbers', games: [G('count', 'mango', counting), G('match', 'mango', qtyMatch), G('basket', 'basket', fill), G('plus', 'apple', plus, 5), G('trace', 'c_art', traceN, 4)] },
     { id: 'colors', c: 'coral', art: 'c_colors', games: [G('touch', 'c_colors', colourTouch), G('sort', 'leaf', colourSort, 4), G('mix', 'fish', colourMix, 5)] },
     { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind)] },
     { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3))] },
