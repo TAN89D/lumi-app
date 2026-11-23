@@ -123,8 +123,14 @@ window.Games = (function () {
       G('melody', 'star', (n, ctx) => cap(ctx).melody.map(len => ({ type: 'melody', len, ask: line('ask.melody') })), 4)] },
     { id: 'countries', c: 'coral', art: 'c_countries', games: [G('flags', 'c_countries', flags, 4), G('memory', 'star', memory('flag', 3), 4)] },
     { id: 'nature', c: 'leaf', art: 'c_nature', games: [G('animals', 'elephant', animals), G('habitat', 'parrot', habitat, 4), G('memory', 'monkey', memory('draw', 4), 4)] },
-    { id: 'stories', c: 'sun', art: 'c_stories', games: L.stories.map(s => ({ id: s.id, title: s.title, e: s.cover, lvl: 3, make: () => [{ type: 'story', story: s, ask: { id: 'fr:story.' + s.id + '.title', text: s.title, lang: 'fr-FR' } }] })) }
+    { id: 'stories', c: 'sun', art: 'c_stories', games: L.stories.map(s => ({ id: s.id, title: s.title, e: s.cover, lvl: 3, make: () => { const st = localStory(s); return [{ type: 'story', story: st, ask: { id: st.code + ':story.' + s.id + '.title', text: st.title, lang: st.speech } }]; } })) }
   ];
-  const label = c => t('cat.' + c.id), gameName = (c, g) => g.title || t('g.' + c.id + '.' + g.id);
-  return { CATS, AKEY, shuffle, pick, COLS, label, gameName };
+  // Histoires : version de la langue courante si elle existe (texte, titre, langue de la voix) ; sinon le français d'origine.
+  function localStory(s) {
+    const lg = I18n.lang(), tr = lg !== 'fr' && L.storiesByLang && L.storiesByLang[lg] && L.storiesByLang[lg][s.id];
+    if (tr) return Object.assign({}, s, { title: tr.title, origin: tr.origin, pages: s.pages.map((p, i) => Object.assign({}, p, { text: tr.pages[i] })), code: lg, speech: I18n.speech() });
+    return Object.assign({}, s, { code: 'fr', speech: 'fr-FR' });
+  }
+  const label = c => t('cat.' + c.id), gameName = (c, g) => (c.id === 'stories' ? localStory(L.stories.find(s => s.id === g.id)).title : t('g.' + c.id + '.' + g.id));
+  return { CATS, AKEY, shuffle, pick, COLS, label, gameName, localStory };
 })();
