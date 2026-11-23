@@ -45,10 +45,24 @@
     Sound.stop(); clearTimeout(nudgeT);
     $app.className = (NOTABS.includes(S.screen) ? 'noTabs' : '') + (S.screen === 'home' ? ' homeApp' : '') + (S.screen === 'welcome' ? ' homeApp welcomeApp' : '');
     $app.innerHTML = screens[S.screen]() + (NOTABS.includes(S.screen) ? '' : tabsHTML());
+    mountMascots();
     if (hooks[S.screen]) hooks[S.screen]();
+  }
+  // Lumi vectoriel : chaque emplacement .mascot-slot reçoit sa mascotte ; poses de fête et de salut puis retour au repos.
+  let mascots = {};
+  function mountMascots() {
+    if (!window.Mascot) return;
+    Mascot.destroyAll(); mascots = {};
+    document.querySelectorAll('.mascot-slot').forEach(el => {
+      const st = el.dataset.state || 'rest', c = Mascot.mount(el, { state: st }); if (!c) return;
+      if (st === 'wave') c.set('wave', 3200); else if (st === 'cheer') c.set('cheer', 4500);
+      mascots[(el.className.match(/\b([wrbq])-lumi\b/) || [])[1] || 'x'] = c;
+    });
+    if (Sound.speaking && Sound.speaking()) Object.values(mascots).forEach(c => c.setSpeaking(true));
   }
   const tabsHTML = () => Home.nav(homeCtx(), Home.activeTab(S.screen));   // barre à 4 onglets (voir home.js)
   const say = l => Sound.speak(l);
+  if (window.Mascot) Mascot.bindSpeech(Sound);
   const showModal = h => { $modal.innerHTML = h; $modal.setAttribute('role', 'dialog'); $modal.setAttribute('aria-modal', 'true'); };
   const hideModal = () => { $modal.innerHTML = ''; };
   const modalOpen = () => $modal.innerHTML !== '';
@@ -103,7 +117,7 @@
   }
   function homeCtx() {
     const p = P(), gs = GROUPS.reduce((a, g) => a + groupStars(g), 0), mx = GROUPS.reduce((a, g) => a + groupMax(g), 0);
-    return { t, dr, IC, art: Art, profile: p, profiles: Store.profiles(), avatarOf, avatar: avatarOf(p.avatar), groups: GROUPS, cat, label: Games.label, gameName: Games.gameName, starRow, starsOf, groupStars, groupMax,
+    return { t, dr, IC, art: Art, mascot: !!window.Mascot, profile: p, profiles: Store.profiles(), avatarOf, avatar: avatarOf(p.avatar), groups: GROUPS, cat, label: Games.label, gameName: Games.gameName, starRow, starsOf, groupStars, groupMax,
       totalStars: totalStars(), pct: Math.round(gs / Math.max(1, mx) * 100), rewardsGot: p.rewards.filter(r => r.type === 'draw').length, rewardsMax: COLLECT.length, mission: missionInfo(),
       mastered: Skills.summary(p).filter(s => s.level === 2).map(s => t('skill.' + s.id)) };
   }
@@ -239,6 +253,7 @@
       return `<div class="xylo">${L.notes.map((n, i) => `<button class="bar" data-note="${i}" style="background:${n.c};height:${r.type === 'melody' ? 200 : 110 + i * 20}px" aria-label="${nn[i]}">${nn[i]}</button>`).join('')}</div>${r.type === 'xylo' ? okBtn('adone', true) : ''}`;
     }
     if (r.type === 'drum') { G.taps = 0; return `<button class="djembe" id="dj" aria-label="${esc(r.ask.text)}">${dr('drum')}</button>${okBtn('adone', true)}`; }
+    if (r.type === 'story' && G.quizOn && G.quiz) return Home.quiz(homeCtx(), G.quiz);
     if (r.type === 'story') {
       const s = r.story, pg = s.pages[G.pg || 0], last = (G.pg || 0) === s.pages.length - 1;
       const sc = s.tale ? Art.storyScene(pg.scene, pg.chars) : `<div class="emj" aria-hidden="true">${pg.img}</div>`;
@@ -248,10 +263,18 @@
     }
     return '';
   }
+  // Fin de l'histoire : question de compréhension (2 réponses à 3 ans, 3 à 4-5 ans). L'enfant peut passer ; rien n'est enregistré, aucune pénalité.
+  function enterQuiz() {
+    const r = cur(), qz = window.StoryQuiz && StoryQuiz.has(r.story.id) ? StoryQuiz.build(r.story.id, r.story.code, P().age) : null;
+    if (!qz) { finish(); return; }
+    G.quiz = qz; G.quizOn = true; G.quizNew = true; G.quizLocked = false; render();
+  }
+  const quizLine = () => ({ id: cur().story.code + ':quiz.' + G.quiz.id + '.q', text: G.quiz.q, lang: cur().story.speech });
   const storyLine = (s, i) => ({ id: s.code + ':story.' + s.id + '.p' + i, text: s.pages[i].text, lang: s.speech });
   function afterPlay() {
     const r = cur(), first = G.fresh; G.fresh = false;
-    if (r.type === 'story') { if (first || G.pgChanged) { G.pgChanged = false; setTimeout(() => say(storyLine(r.story, G.pg || 0)), 300); } }
+    if (r.type === 'story' && G.quizOn) { if (G.quizNew) { G.quizNew = false; setTimeout(() => { if (S.screen === 'play' && G && G.quizOn) say(quizLine()); }, 350); } }
+    else if (r.type === 'story') { if (first || G.pgChanged) { G.pgChanged = false; setTimeout(() => say(storyLine(r.story, G.pg || 0)), 300); } }
     else if (first) setTimeout(() => say(r.ask), 350);
     if (r.type === 'fill') { G.put = new Set(); paintFill(); }
     if (r.type === 'swap') initSwap();
@@ -536,10 +559,24 @@
     adone() { Sound.good(); roundDone(); },
     spg(el) {
       const r = cur(), n = r.story.pages.length, d = +el.dataset.d, pg = (G.pg || 0) + d;
-      if (pg < 0) return; if (pg >= n) { Sound.good(); finish(); return; }
+      if (pg < 0) return; if (pg >= n) { Sound.good(); enterQuiz(); return; }
       G.pg = pg; G.pgChanged = true; Sound.tap(); render(); const pb = document.querySelector('.pbar i'); if (pb) pb.style.width = Math.round(pg / n * 100) + '%';
     },
     sread() { const r = cur(); say(storyLine(r.story, G.pg || 0)); },
+    qsay() { if (G && G.quizOn) say(quizLine()); },
+    qpick(el) {
+      if (!G || !G.quizOn || G.quizLocked || el.getAttribute('aria-disabled') === 'true') return;
+      const i = +el.dataset.i, m = mascots.q;
+      if (StoryQuiz.check(G.quiz, i)) {
+        G.quizLocked = true; el.classList.add('good'); Sound.good(); if (m) m.set('happy', 1700);
+        const l = I18n.pickLine('praise'); toast(l.text, true); say(l);
+        const tk = G; setTimeout(() => { if (G === tk && G.quizOn && S.screen === 'play') finish(); }, 1900);
+      } else {   // mauvaise réponse : douceur, aucune pénalité (ni erreur comptée, ni étoile retirée) ; on peut réessayer ou passer
+        el.classList.add('bad'); el.setAttribute('aria-disabled', 'true'); Sound.soft(); if (m) m.set('oops', 1500);
+        const l = line('quiz.again'); toast(l.text, false); say(l);
+      }
+    },
+    qskip() { if (!G || !G.quizOn) return; G.quizLocked = true; Sound.stop(); finish(); },
     mission: el => { hideModal(); if (checkLock()) return; go('moto', { m: el.dataset.m }); },
     mleft() { if (MH) MH.left(); }, mright() { if (MH) MH.right(); },
     pickg(el) { const v = (el.dataset.k === 'vehicle' ? L.vehicles : L.pilots).find(x => x.e === el.dataset.e); if (totalStars() < v.need) { toast('★ ' + v.need, false); return; } P().garage = Object.assign(garage(), { [el.dataset.k]: v.e }); Store.save(); render(); },

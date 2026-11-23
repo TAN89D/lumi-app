@@ -106,6 +106,40 @@ test.describe('Nouvel accueil (V3.2)', () => {
   });
 });
 
+test.describe('V3.4 : histoires interactives et mascotte animée', () => {
+  test('question de compréhension : réessayer sans pénalité, répondre, ou passer', async ({ page }, info) => {
+    await openHome(page);
+    await page.evaluate(() => window.LumiApp.startGame('stories', 'mangue'));
+    for (let i = 0; i < 6 && !(await page.locator('.quiz').count()); i++) { await page.locator('[data-act="spg"][data-d="1"]').click(); }
+    await expect(page.locator('.quiz')).toBeVisible();
+    await info.attach('quiz', { body: await page.screenshot(), contentType: 'image/png' });
+    const bad = await page.evaluate(() => window.LumiApp.game.quiz.choices.findIndex(c => !c.ok));
+    await page.locator('.q-ch').nth(bad).click();
+    await expect(page.locator('.quiz')).toBeVisible();   // on peut réessayer
+    expect(await page.evaluate(() => window.LumiApp.game.err)).toBe(0);   // aucune pénalité
+    const good = await page.evaluate(() => window.LumiApp.game.quiz.choices.findIndex(c => c.ok));
+    await page.locator('.q-ch').nth(good).click();
+    await expect(page.locator('.result')).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('.big-stars .star.on')).toHaveCount(3);
+  });
+  test('on peut terminer l’histoire sans répondre', async ({ page }) => {
+    await openHome(page);
+    await page.evaluate(() => window.LumiApp.startGame('stories', 'baobab'));
+    for (let i = 0; i < 8 && !(await page.locator('.quiz').count()); i++) { await page.locator('[data-act="spg"][data-d="1"]').click(); }
+    await page.locator('.q-skip').click();
+    await expect(page.locator('.result')).toBeVisible();
+  });
+  test('Lumi est animé, et immobile si les animations sont réduites', async ({ page }) => {
+    await page.goto('/index.html');
+    await expect(page.locator('.w-lumi svg.lumi')).toBeVisible();
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('.lumi .l-body')).animationName)).not.toBe('none');
+    await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload();
+    await expect(page.locator('.w-lumi svg.lumi')).toBeVisible();
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('.lumi .l-body')).animationName)).toBe('none');
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('.lumi .l-arm-r')).animationName)).toBe('none');
+  });
+});
+
 test.describe('Hors ligne', () => {
   test('après la première visite, LUMI démarre et se joue sans connexion', async ({ page, context, browserName }) => {
     test.skip(browserName !== 'chromium', 'le hors ligne est vérifié sur Chromium');

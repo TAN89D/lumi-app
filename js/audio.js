@@ -97,12 +97,16 @@ window.Sound = (function () {
     });
   }
   Store.addWiper(() => clearClips());
-  function playClip(url) { try { if (playing) playing.pause(); playing = new Audio(url); playing.volume = vol(); playing.play().catch(() => {}); } catch (e) {} }
+  // État « la voix parle » : la mascotte synchronise sa bouche dessus (voir mascot.js). Aucune donnée n'est conservée.
+  let spkCb = null, isSpeaking = false;
+  const spk = v => { if (isSpeaking === v) return; isSpeaking = v; try { spkCb && spkCb(v); } catch (e) {} };
+  function playClip(url) { try { if (playing) playing.pause(); playing = new Audio(url); playing.volume = vol(); playing.onplay = () => spk(true); playing.onended = playing.onpause = () => spk(false); playing.play().catch(() => {}); } catch (e) {} }
   let onMiss = null, seq = 0;
 
   // l = { id, text, lang? } (phrase localisée) ou simple chaîne
   function speak(l) {
     const s = st(); if (!s.voice || !l) return;
+    try { if (playing) playing.pause(); } catch (e) {}   // jamais deux narrations en même temps (enregistrement d'un adulte + voix de synthèse)
     const text = typeof l === 'string' ? l : l.text, url = clipFor(l);
     if (url) { try { synth && synth.cancel(); } catch (e) {} playClip(url); return; }
     if (s.rec && onMiss) { onMiss(typeof l === 'string' ? { id: norm(l), text: l } : l); return; }
@@ -122,6 +126,7 @@ window.Sound = (function () {
         u.lang = v ? v.lang : lang; if (v) u.voice = v;
         u.rate = s.rate || 0.85; u.pitch = s.pitch || 1.1; u.volume = vol();
         window._lumiUtt = u;
+        u.onstart = () => { if (my === seq) spk(true); }; u.onend = u.onerror = () => { if (my === seq) spk(false); };
         const go = () => { if (my === seq) synth.speak(u); };
         if (synth.speaking || synth.pending) { synth.cancel(); setTimeout(go, 80); } else go();
       } catch (e) {}
@@ -138,7 +143,7 @@ window.Sound = (function () {
     } catch (e) {}
   }
   document.addEventListener('pointerdown', unlock, { once: true });
-  function stop() { seq++; try { synth && synth.cancel(); if (playing) playing.pause(); } catch (e) {} }
+  function stop() { seq++; try { synth && synth.cancel(); if (playing) playing.pause(); } catch (e) {} spk(false); }
   function setVolume(v) { st().volume = Math.min(1, Math.max(0, +v || 0)); Store.save(); if (playing) playing.volume = vol(); }
   function tone(freqs, dur) {
     if (!st().sfx) return;
@@ -165,7 +170,7 @@ window.Sound = (function () {
   }
   return {
     speak, stop, note, voices, refresh, saveClip, clearClips, playClip, setVolume, vol, ready: openDB,
-    clipCount: () => clips.size, hasClip: l => !!clipFor(l), setOnMiss: f => { onMiss = f; },
+    clipCount: () => clips.size, hasClip: l => !!clipFor(l), setOnMiss: f => { onMiss = f; }, onSpeaking: f => { spkCb = f; }, speaking: () => isSpeaking,
     onNoVoice: f => { noVoiceCb = f; }, resetNoVoiceWarnings: () => { noVoiceShown = {}; }, noVoice,
     voiceName: () => { if (!voice) refresh(); return voice ? voice.name : null; },
     missing: () => { if (!voice) refresh(); return noVoice(); },
