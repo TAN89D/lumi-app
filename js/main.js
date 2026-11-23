@@ -42,7 +42,7 @@
     $app.innerHTML = screens[S.screen]() + (NOTABS.includes(S.screen) ? '' : tabsHTML());
     if (hooks[S.screen]) hooks[S.screen]();
   }
-  const tabsHTML = () => `<nav class="tabs" aria-label="Navigation"><button class="${S.screen === 'home' ? 'on' : ''}" data-act="go" data-to="home" aria-label="${t('tab.home')}">${IC.home}</button><button class="${S.screen === 'trophies' ? 'on' : ''}" data-act="go" data-to="trophies" aria-label="${t('tab.trophies')}">${IC.trophy}</button><button data-act="go" data-to="gate" aria-label="${t('tab.parents')}">${IC.lock}</button></nav>`;
+  const tabsHTML = () => `<nav class="tabs" aria-label="LUMI"><button class="${S.screen === 'home' ? 'on' : ''}" data-act="go" data-to="home" aria-label="${t('tab.home')}">${IC.home}</button><button class="${S.screen === 'trophies' ? 'on' : ''}" data-act="go" data-to="trophies" aria-label="${t('tab.trophies')}">${IC.trophy}</button><button data-act="go" data-to="gate" aria-label="${t('tab.parents')}">${IC.lock}</button></nav>`;
   const say = l => Sound.speak(l);
   const showModal = h => { $modal.innerHTML = h; $modal.setAttribute('role', 'dialog'); $modal.setAttribute('aria-modal', 'true'); };
   const hideModal = () => { $modal.innerHTML = ''; };
@@ -57,6 +57,7 @@
   }
   const starRow = n => `<span class="stars" aria-label="${n} / 3">${[0, 1, 2].map(i => `<span class="star ${i < n ? 'on' : ''}">★</span>`).join('')}</span>`;
 
+  if (Env.label) { const rb = document.createElement('div'); rb.className = 'ribbon'; rb.textContent = Env.label + ' — ' + Env.slug; document.body.appendChild(rb); }
   // ---- bandeau d'avertissement (stockage plein, données illisibles…) ----
   const notice = document.createElement('div'); notice.className = 'notice'; notice.hidden = true; notice.setAttribute('role', 'alert'); document.body.appendChild(notice);
   function showNotice(msg) { notice.innerHTML = `<span>${esc(msg)}</span><button aria-label="${t('close')}" data-n="x">✕</button>`; notice.hidden = false; }
@@ -86,7 +87,7 @@
   const screens = {
     home() {
       const p = P(), av = avatarOf(p.avatar);
-      return `<div class="hello"><button class="av" data-act="profiles" aria-label="Profils">${Art.child(av)}</button><div class="say">${p.name ? t('helloName', { name: esc(p.name) }) : t('hello')}</div><div class="chip">${dr('star')}${totalStars()}</div></div>
+      return `<div class="hello"><button class="av" data-act="profiles" aria-label="${t('p.profiles')}">${Art.child(av)}</button><div class="say">${p.name ? t('helloName', { name: esc(p.name) }) : t('hello')}</div><div class="chip">${dr('star')}${totalStars()}</div></div>
       <div class="hero"><div class="lu">${dr('lion')}</div><button class="go" data-act="auto">${IC.play}${t('play')}</button></div>
       <div class="cats">${CATS.map(c => `<button class="cat" style="--b:var(--${c.c});--bd:var(--${c.c}D)" data-act="cat" data-id="${c.id}"><span class="lab">${Games.label(c)}</span><div class="pic">${dr(c.art)}</div><span class="st">★ ${catStars(c)}/${c.games.length * 3}</span></button>`).join('')}
       <button class="cat wide" style="--b:var(--coral);--bd:var(--coralD)" data-act="go" data-to="recre"><span class="lab">${t('recre')}</span><div class="pic">${dr('c_recre')}</div></button></div>`;
@@ -122,11 +123,12 @@
       <button class="gcard" data-act="go" data-to="garage"><div class="gi">${g.pilot}</div><div><b>${t('garage')}</b></div></button></div></div>`;
     },
     missions() {
-      return `<div class="hub" style="--b:var(--coral);--bd:var(--coralD)"><div class="hubtop"><button class="ib" data-act="go" data-to="recre" aria-label="${t('back')}">${IC.back}</button><h1>${t('missions')}</h1></div><div class="glist">${L.missions.map(m => `<button class="gcard" data-act="mission" data-m="${m.id}"><div class="gi">${m.icon}</div><div><b>${esc(m.title)}</b><small>${m.goal} ${m.items.join('')}</small></div></button>`).join('')}</div></div>`;
+      return `<div class="hub" style="--b:var(--coral);--bd:var(--coralD)"><div class="hubtop"><button class="ib" data-act="go" data-to="recre" aria-label="${t('back')}">${IC.back}</button><h1>${t('missions')}</h1></div><div class="glist">${L.missions.map(m => `<button class="gcard" data-act="mission" data-m="${m.id}"><div class="gi">${m.icon}</div><div><b>${esc(t('mission.' + m.id))}</b><small>${m.goal} ${m.items.join('')}</small></div></button>`).join('')}</div></div>`;
     },
     garage() {
       const g = garage(), n = totalStars();
-      const grid = (list, key) => list.map(v => { const ok = n >= v.need; return `<button class="gtile ${g[key] === v.e ? 'on' : ''} ${ok ? '' : 'off'}" data-act="pickg" data-k="${key}" data-e="${v.e}" aria-label="${v.name}">${v.e}<small>${ok ? v.name : '★ ' + v.need}</small></button>`; }).join('');
+      const nm = (key, v) => t((key === 'vehicle' ? 'veh.' : 'pil.') + v.name);
+      const grid = (list, key) => list.map(v => { const ok = n >= v.need; return `<button class="gtile ${g[key] === v.e ? 'on' : ''} ${ok ? '' : 'off'}" data-act="pickg" data-k="${key}" data-e="${v.e}" aria-label="${nm(key, v)}">${v.e}<small>${ok ? nm(key, v) : '★ ' + v.need}</small></button>`; }).join('');
       return `<div class="pagehead"><button class="ib" data-act="go" data-to="recre" aria-label="${t('back')}">${IC.back}</button><h1>${t('garage')}</h1><div class="chip">${dr('star')}${n}</div></div>
       <div class="sec"><div class="center" style="font-size:4rem">${g.vehicle} ${g.pilot}</div></div>
       <div class="sec"><h2>${t('vehicles')}</h2><div class="ggrid">${grid(L.vehicles, 'vehicle')}</div></div><div class="sec"><h2>${t('pilots')}</h2><div class="ggrid">${grid(L.pilots, 'pilot')}</div></div>`;
@@ -220,12 +222,12 @@
     if (r.type === 'story') {
       const s = r.story, pg = s.pages[G.pg || 0], last = (G.pg || 0) === s.pages.length - 1;
       const sc = s.tale ? Art.storyScene(pg.scene, pg.chars) : `<div class="emj" aria-hidden="true">${pg.img}</div>`;
-      return `${sc}<div class="stext" lang="fr">${pg.text}${last && s.origin ? `<div class="origin">${s.origin}</div>` : ''}</div>
+      return `${sc}<div class="stext" lang="${s.code}">${pg.text}${last && s.origin ? `<div class="origin">${s.origin}</div>` : ''}</div>
       <div class="tools"><button class="ib" data-act="spg" data-d="-1" aria-label="${t('back')}">${IC.back}</button><button class="ib" data-act="sread" aria-label="${t('play')}">${IC.speaker}</button><button class="ib" style="background:var(--leaf);color:#fff" data-act="spg" data-d="1" aria-label="${last ? t('done') : t('next')}">${last ? IC.check : IC.play}</button></div>`;
     }
     return '';
   }
-  const storyLine = (s, i) => ({ id: 'fr:story.' + s.id + '.p' + i, text: s.pages[i].text, lang: 'fr-FR' });
+  const storyLine = (s, i) => ({ id: s.code + ':story.' + s.id + '.p' + i, text: s.pages[i].text, lang: s.speech });
   function afterPlay() {
     const r = cur(), first = G.fresh; G.fresh = false;
     if (r.type === 'story') { if (first || G.pgChanged) { G.pgChanged = false; setTimeout(() => say(storyLine(r.story, G.pg || 0)), 300); } }
@@ -416,12 +418,15 @@
       <div class="pf"><input type="text" value="${esc(x.name)}" maxlength="20" placeholder="${t('p.name')}" data-chg="rename" data-id="${x.id}" aria-label="${t('p.name')}">
       <select data-chg="age" data-id="${x.id}" aria-label="${t('p.age')}">${[3, 4, 5].map(a => `<option value="${a}" ${x.age === a ? 'selected' : ''}>${t('p.years', { n: a })}</option>`).join('')}</select></div>
       <div class="pb2">${x.id === p.id ? `<span class="tag">${t('p.active')}</span>` : `<button class="btn" data-act="switch" data-id="${x.id}">${IC.check}</button>`}<button class="btn warn" data-act="delprof" data-id="${x.id}" aria-label="${t('p.delete')}">${IC.close}</button></div></div>`).join('');
-    const skills = Skills.summary(p).map(k => `<div class="bline"><span style="width:150px;font-size:.85rem">${t('skill.' + k.id)}</span><div class="pbx"><i style="width:${Math.round(k.score * 100)}%"></i></div><span class="lv l${k.level}">${t('skill.level.' + k.level)}</span></div>`).join('');
+    const skills = Skills.summary(p).map(k => `<div class="bline"><span style="width:150px;font-size:.85rem">${t('skill.' + k.id)}${k.plays ? `<br><small>${t('sk.stats', { n: k.plays, d: k.days || 1 })}</small>` : ''}</span><div class="pbx"><i style="width:${Math.round(k.score * 100)}%"></i></div><span class="lv l${k.level}">${t('skill.level.' + k.level)}</span></div>`).join('');
+    const adv = Skills.advice(p, p.age, CATS).map(a => { const sk = t('skill.' + a.skill), cg = a.game && cat(a.game[0]), gm = cg ? Games.gameName(cg, cg.games.find(g => g.id === a.game[1])) : '';
+      return `<p class="adv">${a.kind === 'ready' ? t('adv.ready', { skill: sk }) + (a.game ? t('adv.ready.next', { game: gm }) : t('adv.ready.keep')) : t('adv.' + a.kind, { skill: sk, game: gm })}</p>`; }).join('') || `<p>${t('adv.none')}</p>`;
     const ls = [0, 10, 15, 20, 30].map(m => [m, m ? t('p.min', { n: m }) : t('p.none')]), lk = [0, 20, 30, 45, 60, 90].map(m => [m, m ? t('p.min', { n: m }) : t('p.none')]);
     const fm = Sound.voices();
     return `<div class="pagehead"><button class="ib" data-act="go" data-to="home" aria-label="${t('back')}">${IC.back}</button><h1>${t('p.title')}</h1></div>
       <div class="sec"><h2>${t('p.profiles')}</h2>${profs}<button class="btn sun" data-act="addprof">＋ ${t('p.addProfile')}</button></div>
-      <div class="sec"><h2>${t('p.skills')} — ${esc(p.name || '')}</h2>${skills}</div>
+      <div class="sec"><h2>${t('adv.title')}</h2>${adv}</div>
+      <div class="sec"><h2>${t('p.skills')} — ${esc(p.name || '')}</h2>${skills}<p class="note">${t('p.skillsHelp')}</p></div>
       <div class="sec"><h2>${t('p.progress')}</h2>${CATS.map(c => { const done = c.games.filter(g => starsOf(c.id, g.id) > 0).length; return `<div class="bline"><span>${Games.label(c)}</span><div class="pbx"><i style="width:${Math.round(catStars(c) / (c.games.length * 3) * 100)}%"></i></div><span style="width:44px;text-align:right">${done}/${c.games.length}</span></div>`; }).join('')}
         <div class="row"><span>${t('p.hints')}</span><b>${Object.values(p.progress).reduce((a, x) => a + (x.hints || 0), 0)}</b></div><div class="row"><span>${t('p.recres')}</span><b>${p.minis ? Object.values(p.minis).reduce((a, b) => a + b, 0) : 0}</b></div></div>
       <div class="sec"><h2>${t('p.time')}</h2><div class="row"><span>${t('p.today')}</span><b>${mins(Store.playedToday())}</b></div>${days.map(d => `<div class="row"><span>${d}</span><span>${mins(pt[d])}</span></div>`).join('')}</div>
@@ -452,7 +457,7 @@
   }
   function profilesModal() {
     const ps = Store.profiles();
-    showModal(`<div class="dlg"><div class="avs big">${ps.map(x => `<button class="avb ${x.id === P().id ? 'on' : ''}" data-act="switch" data-id="${x.id}" aria-label="${esc(x.name || 'profil')}">${Art.child(avatarOf(x.avatar))}<small>${esc(x.name || '')}</small></button>`).join('')}</div>
+    showModal(`<div class="dlg"><div class="avs big">${ps.map(x => `<button class="avb ${x.id === P().id ? 'on' : ''}" data-act="switch" data-id="${x.id}" aria-label="${esc(x.name || t('p.profiles'))}">${Art.child(avatarOf(x.avatar))}<small>${esc(x.name || '')}</small></button>`).join('')}</div>
       <div class="btns"><button style="background:var(--coral)" data-act="stay" aria-label="${t('close')}">${IC.close}</button></div></div>`);
   }
   let importText = '';
@@ -461,19 +466,21 @@
   }
   function afterDataChange() { I18n.setLang(Store.s().lang); applyPrefs(); Sound.refresh(); Store.profiles().forEach(p => { if (!Object.keys(p.skills || {}).length) Skills.rebuild(p); }); Store.ensureProfile(); Store.save(); }
 
+  // Effacement total : on affiche le résultat RÉEL de chaque étape. « Tout a été effacé » seulement si tout l'est vraiment ; sinon, ce qui reste + « Recommencer ».
+  async function runWipe() {
+    const r = await Store.wipeAll(), lab = s => (s.name === 'localStorage' ? t('wipe.localStorage') : /voix/.test(s.name) ? t('wipe.voices') : t('wipe.effaceur'));
+    if (r.ok) { showModal(`<div class="dlg"><h1 style="font-size:1.2rem">${t('p.wipeOk')}</h1><div class="btns"><button style="background:var(--leaf)" data-act="reload" aria-label="${t('inst.ok')}">${IC.check}</button></div></div>`); return; }
+    showModal(`<div class="dlg" style="text-align:left"><h1 style="font-size:1.1rem">${r.partial ? t('p.wipePartial') : t('p.wipeFailed')}</h1>
+      <ul style="padding-left:18px">${r.steps.map(s => `<li>${s.ok ? '✔' : '✘'} ${esc(lab(s))}${s.ok ? '' : ' — ' + esc(s.why || s.state || '')}</li>`).join('')}</ul>
+      <div class="btns"><button style="background:var(--coral);padding:0 16px" data-act="retrywipe">${t('p.wipeRetry')}</button><button style="background:#8a7c52" data-act="stay" aria-label="${t('close')}">${IC.close}</button></div></div>`);
+  }
+
   // ================= ACTIONS =================
   const actions = {
     go: el => { hideModal(); if (el.dataset.to === 'gate') openGate('parent'); else go(el.dataset.to); },
     cat: el => go('cat', { id: el.dataset.id }),
     game: el => { hideModal(); startGame(el.dataset.c, el.dataset.g); },
-    auto() {
-      const age = P().age; let tgt = null; const max = Math.max(...CATS.map(c => c.games.length));
-      const ok = g => g.lvl <= age;
-      for (let j = 0; j < max && !tgt; j++) CATS.forEach(c => { if (!tgt && c.games[j] && ok(c.games[j]) && starsOf(c.id, c.games[j].id) === 0) tgt = [c.id, c.games[j].id]; });
-      for (let j = 0; j < max && !tgt; j++) CATS.forEach(c => { if (!tgt && c.games[j] && ok(c.games[j]) && starsOf(c.id, c.games[j].id) < 3) tgt = [c.id, c.games[j].id]; });
-      if (!tgt) { const c = pick(CATS), g = pick(c.games); tgt = [c.id, g.id]; }
-      startGame(tgt[0], tgt[1]);
-    },
+    auto() { const tgt = Rules.nextGame(CATS, P().age, starsOf); startGame(tgt[0], tgt[1]); },   // le filtre d'âge reste actif même quand tout est terminé
     say() { const r = cur(); if (!r) return; if (r.type === 'story') say(storyLine(r.story, G.pg || 0)); else { say(r.ask); if (r.type === 'melody') playMelody(); armNudge(); } },
     leave() { if (G && G.idx > 0) confirmBox(t('quit'), () => { hideModal(); go('cat', { id: G.cat }); }); else go('cat', { id: G.cat }); },
     yes() { const f = window._lumiYes; window._lumiYes = null; hideModal(); if (f) f(); },
@@ -511,13 +518,14 @@
     switch(el) { Store.setActive(el.dataset.id); sinceBreak = 0; hideModal(); if (!checkLock()) render(); },
     addprof() { addProfileForm(); },
     pickav(el) { window._lumiAv = el.dataset.a; document.querySelectorAll('.avb').forEach(b => b.classList.toggle('on', b === el)); },
-    saveprof() { const n = document.getElementById('np').value, a = document.getElementById('na').value; const np = Store.createProfile(n, window._lumiAv || 'awa', a); hideModal(); if (!np) showNotice('8 profils maximum.'); render(); },
+    saveprof() { const n = document.getElementById('np').value, a = document.getElementById('na').value; const np = Store.createProfile(n, window._lumiAv || 'awa', a); hideModal(); if (!np) showNotice(t('p.maxProfiles')); render(); },
     delprof(el) { const id = el.dataset.id; confirmBox(t('p.confirmDelete'), () => { Store.deleteProfile(id); sinceBreak = 0; render(); }); },
     // -- réglages --
     tog(el) { const s = Store.s(); s[el.dataset.k] = !s[el.dataset.k]; Store.save(); applyPrefs(); render(); },
     testvoice() { say(line('hello')); },
     howinstall() { LumiInstall.open(); }, doinstall() { hideModal(); LumiInstall.ask(); },
-    clearclips() { confirmBox(t('p.clearClips') + ' ?', async () => { await Sound.clearClips(); render(); }); },
+    clearclips() { confirmBox(t('p.clearClips') + ' ?', async () => { const r = await Sound.clearClips(); showNotice(r.ok ? t('p.clipsOk') : r.state === 'blocked' ? t('p.clipsBlocked') : t('p.clipsError', { why: r.why })); render(); }); },
+    reload() { location.reload(); },
     key(el) { gateKey(el.dataset.k); },
     unlock() { openGate('unlock'); },
     // -- données --
@@ -527,9 +535,8 @@
       hideModal(); const r = Store.importData(importText, el.dataset.mode); importText = '';
       if (r.ok) { afterDataChange(); showNotice(t('p.importOk', { n: r.n })); render(); } else showNotice(t('p.importBad', { why: r.why }));
     },
-    wipe() {
-      confirmBox(t('p.wipeConfirm'), async () => { await Store.wipeAll(); try { const ks = await caches.keys(); } catch (e) {} location.reload(); });
-    }
+    wipe() { confirmBox(t('p.wipeConfirm'), () => runWipe()); },
+    retrywipe() { hideModal(); runWipe(); }
   };
   const onAct = e => {
     lastTouch = Date.now();
@@ -556,7 +563,7 @@
     if (k === 'age') { const pp = Store.data().profiles[e.target.dataset.id]; if (pp) { pp.age = +e.target.value; Store.save(); } }
     if (k === 'breakMin' || k === 'lockMin') { s[k] = +e.target.value; sinceBreak = 0; Store.save(); }
     if (k === 'textScale') { s.textScale = +e.target.value; Store.save(); applyPrefs(); }
-    if (k === 'lang') { s.lang = e.target.value; I18n.setLang(s.lang); Store.save(); Sound.refresh(); applyPrefs(); render(); }
+    if (k === 'lang') { s.lang = e.target.value; I18n.setLang(s.lang); Store.save(); Sound.resetNoVoiceWarnings(); Sound.refresh(); applyPrefs(); render(); }
   });
   $app.addEventListener('input', e => {
     const k = e.target.dataset.inp, s = Store.s();
@@ -574,11 +581,12 @@
       <div class="rb"><button data-r="rec" class="${rc.mr ? 'live' : ''}">${rc.mr ? '■' : rc.blob ? '● ↺' : '●'}</button>${rc.blob ? '<button data-r="play">▶</button><button data-r="ok" class="ok">✔</button>' : ''}<button data-r="skip">✕</button></div>`;
   }
   function closeRec() { if (rc && rc.stream) rc.stream.getTracks().forEach(x => x.stop()); rc = null; paintRec(); }
+  Sound.onNoVoice(lang => showNotice('speechSynthesis' in window ? t('voice.none', { lang }) : t('voice.nosynth')));
   Sound.setOnMiss(l => { if (rc && rc.l.id === l.id) return; closeRec(); rc = { l }; paintRec(); });
   recBox.addEventListener('click', async e => {
     const b = e.target.closest('[data-r]'); if (!b || !rc) return; const a = b.dataset.r;
     if (a === 'skip') closeRec(); else if (a === 'play') Sound.playClip(URL.createObjectURL(rc.blob));
-    else if (a === 'ok') { Sound.saveClip(rc.l, rc.blob); closeRec(); toast('✔', true); }
+    else if (a === 'ok') { const l = rc.l; Sound.saveClip(l, rc.blob).then(ok => toast(ok ? t('rec.saved') : t('rec.notsaved'), ok)); closeRec(); }
     else if (a === 'rec') {
       if (rc.mr) { rc.mr.stop(); return; }
       try {
@@ -587,7 +595,7 @@
         mr.ondataavailable = ev => chunks.push(ev.data);
         mr.onstop = () => { if (!rc) return; rc.blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' }); rc.mr = null; rc.stream.getTracks().forEach(x => x.stop()); paintRec(); };
         mr.start(); paintRec('…');
-      } catch (err) { paintRec('Micro indisponible / Microphone unavailable'); }
+      } catch (err) { paintRec(t('rec.nomic')); }
     }
   });
 
@@ -614,27 +622,27 @@
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const bar = document.createElement('div'); bar.className = 'install'; bar.hidden = true; document.body.appendChild(bar);
   let deferred = null, askedOnce = false;
-  const dismissed = () => { try { return Date.now() - (+localStorage.getItem('lumi.installNo') || 0) < 7 * 864e5; } catch (e) { return false; } };
-  const hideBar = remember => { bar.hidden = true; if (remember) try { localStorage.setItem('lumi.installNo', Date.now()); } catch (e) {} };
+  const dismissed = () => { try { return Date.now() - (+localStorage.getItem(Env.k('installNo')) || 0) < 7 * 864e5; } catch (e) { return false; } };
+  const hideBar = remember => { bar.hidden = true; if (remember) try { localStorage.setItem(Env.k('installNo'), Date.now()); } catch (e) {} };
   const ua = navigator.userAgent, isMobile = /android|iphone|ipad|ipod|mobile/i.test(ua) || isIOS;
   function howTo() {
-    if (/FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\)|TikTok|Snapchat/i.test(ua)) return { name: 'in-app', txt: 'Ouvre ce lien dans ton navigateur (menu ⋮ puis « Ouvrir dans le navigateur »), puis installe LUMI.' };
-    if (isIOS) return { name: 'Safari', txt: 'Touche Partager ⬆️ puis « Sur l’écran d’accueil ». (Dans Chrome ou Firefox sur iPhone, ouvre plutôt le lien dans Safari.)' };
-    if (/SamsungBrowser/i.test(ua)) return { name: 'Samsung Internet', txt: 'Touche le menu ☰ puis « Ajouter la page à » → « Écran d’accueil ».' };
-    if (/Firefox|FxiOS/i.test(ua)) return { name: 'Firefox', txt: 'Touche le menu ⋮ puis « Installer » (ou « Ajouter à l’écran d’accueil »).' };
-    if (/EdgA|EdgiOS|Edg\//i.test(ua)) return { name: 'Edge', txt: 'Touche le menu ⋯ puis « Ajouter au téléphone » (ou « Installer »).' };
-    if (/OPR|Opera/i.test(ua)) return { name: 'Opera', txt: 'Touche le menu ⋮ puis « Écran d’accueil ».' };
-    return { name: 'navigateur', short: 'menu du navigateur (⋮ ☰ ⋯) puis « Ajouter à l’écran d’accueil ».', txt: 'Touche le menu du navigateur (⋮, ☰ ou ⋯), puis « Ajouter à l’écran d’accueil » (ou « Ajouter un raccourci », « Installer l’application »). À défaut, ajoute la page aux favoris : LUMI marche quand même.' };
+    if (/FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\)|TikTok|Snapchat/i.test(ua)) return { name: 'in-app', txt: t('inst.inapp') };
+    if (isIOS) return { name: 'Safari', txt: t('inst.ios') };
+    if (/SamsungBrowser/i.test(ua)) return { name: 'Samsung Internet', txt: t('inst.samsung') };
+    if (/Firefox|FxiOS/i.test(ua)) return { name: 'Firefox', txt: t('inst.firefox') };
+    if (/EdgA|EdgiOS|Edg\//i.test(ua)) return { name: 'Edge', txt: t('inst.edge') };
+    if (/OPR|Opera/i.test(ua)) return { name: 'Opera', txt: t('inst.opera') };
+    return { name: 'Browser', short: t('inst.generic.short'), txt: t('inst.generic') };
   }
   function showBar() {
     if (standalone || dismissed()) return;
-    if (deferred) bar.innerHTML = `<span>${t('p.install')}</span><button class="go" data-inst="yes">${t('p.install')}</button><button class="no" data-inst="no" aria-label="${t('close')}">✕</button>`;
-    else if (isMobile) bar.innerHTML = `<span>${t('p.install')} : ${howTo().short || howTo().txt}</span><button class="no" data-inst="no" aria-label="${t('close')}">✕</button>`;
+    if (deferred) bar.innerHTML = `<span>${t('inst.bar')}</span><button class="go" data-inst="yes">${t('inst.button')}</button><button class="no" data-inst="no" aria-label="${t('close')}">✕</button>`;
+    else if (isMobile) bar.innerHTML = `<span>${t('inst.title')} : ${howTo().short || howTo().txt}</span><button class="no" data-inst="no" aria-label="${t('close')}">✕</button>`;
     else return; bar.hidden = false;
   }
   window.LumiInstall = {
-    open() { const h = howTo(); showModal(`<div class="dlg"><h1>${t('p.install')}</h1><p style="text-align:left">${h.name}<br><br>${deferred ? '' : esc(h.txt)}</p><div class="btns">${deferred ? `<button style="background:var(--leaf)" data-act="doinstall">${t('p.install')}</button>` : ''}<button style="background:var(--turq)" data-act="stay">OK</button></div></div>`); },
-    ask: () => askInstall()
+    open() { const h = howTo(); showModal(`<div class="dlg"><h1>${t('inst.title')}</h1><p style="text-align:left">${t('inst.detected', { name: h.name })}<br><br>${deferred ? '' : esc(h.txt)}</p><div class="btns">${deferred ? `<button style="background:var(--leaf);padding:0 16px" data-act="doinstall">${t('inst.button')}</button>` : ''}<button style="background:var(--turq)" data-act="stay">${t('inst.ok')}</button></div></div>`); },
+    ask: () => askInstall(), howTo
   };
   async function askInstall() { if (!deferred) return; const ev = deferred; deferred = null; askedOnce = true; try { ev.prompt(); const r = await ev.userChoice; hideBar(r.outcome !== 'accepted'); } catch (e) {} }
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; if (!standalone && !dismissed()) showBar(); });

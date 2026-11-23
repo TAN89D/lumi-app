@@ -1,7 +1,8 @@
 // Sauvegarde locale de LUMI (localStorage). Aucune donnée ne quitte l'appareil.
-// Données VERSIONNÉES (SCHEMA) avec migrations automatiques ; la clé reste « lumi.v1 » pour ne perdre aucune progression.
+// Données VERSIONNÉES (SCHEMA) avec migrations automatiques ; la clé de production reste « lumi.v1 » pour ne perdre aucune progression.
+// Les clés sont isolées par environnement (voir env.js) : une prévisualisation ne lit ni n'efface jamais les données de la production.
 (function () {
-  const KEY = 'lumi.v1', SCHEMA = 2, MAX_IMPORT = 2 * 1024 * 1024, BAD = ['__proto__', 'constructor', 'prototype'];
+  const KEY = Env.k('v1'), SCHEMA = 3, MAX_IMPORT = 2 * 1024 * 1024, BAD = ['__proto__', 'constructor', 'prototype'];
   const AVATARS = ['awa', 'abdou', 'fanta', 'moussa'];
   const defSettings = () => ({ lang: 'fr', voice: true, sfx: true, volume: 0.9, textScale: 1, big: false, calm: false, contrast: false, breakMin: 0, lockMin: 0, minis: true, rec: false, vname: '', rate: 0.85, pitch: 1.1 });
   const defaults = () => ({ v: SCHEMA, active: null, profiles: {}, settings: defSettings() });
@@ -12,11 +13,10 @@
 
   // Date LOCALE (et non UTC) : la journée de jeu change à minuit chez l'enfant, pas à l'heure de Greenwich.
   const localDay = d => { d = d || new Date(); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
-
   const newProfile = (id, name, avatar, age) => ({ id, name: String(name || '').trim().slice(0, 20), avatar: AVATARS.includes(avatar) ? avatar : 'awa', age: [3, 4, 5].includes(+age) ? +age : 4,
     created: Date.now(), progress: {}, rewards: [], playTime: {}, storiesRead: [], skills: {}, recre: 0 });
 
-  // ---- migrations : MIGRATIONS[n] fait passer de la version n à n+1 ----
+  // ---- migrations : MIGRATIONS[n] fait passer de la version n à n+1 (additives : on n'enlève jamais de données) ----
   const MIGRATIONS = {
     1: o => {
       const s = o.settings || {};
@@ -27,6 +27,10 @@
         p.progress = p.progress || {}; p.rewards = Array.isArray(p.rewards) ? p.rewards : []; p.playTime = p.playTime || {}; p.storiesRead = Array.isArray(p.storiesRead) ? p.storiesRead : [];
       });
       o.v = 2; return o;
+    },
+    2: o => {   // compétences : on AJOUTE l'historique (h), le nombre de jours (d) et le dernier jour, sans toucher au score ni au nombre de parties
+      Object.values(o.profiles || {}).forEach(p => { Object.keys(p.skills || {}).forEach(k => { const s = p.skills[k]; if (s && typeof s === 'object') { if (!Array.isArray(s.h)) s.h = []; if (typeof s.d !== 'number') s.d = 0; if (typeof s.last !== 'string') s.last = ''; } }); });
+      o.v = 3; return o;
     }
   };
   function migrate(o) {
@@ -63,7 +67,8 @@
     const ids = Object.keys(o.profiles).filter(okKey);
     if (!ids.length) return { ok: false, why: 'aucun profil dans le fichier' };
     if (ids.length > 12) return { ok: false, why: 'trop de profils' };
-    const out = { v: +o.v || 1, active: null, profiles: {}, settings: isObj(o.settings) ? o.settings : {} };
+    const out = { v: SCHEMA, active: null, profiles: {}, settings: isObj(o.settings) ? Object.assign({}, o.settings) : {} };
+    if (out.settings.limitMin !== undefined && out.settings.breakMin === undefined) out.settings.breakMin = +out.settings.limitMin || 0;   // sauvegarde V1 : l'ancienne limite devient un rappel
     ids.forEach(id => {
       const p = o.profiles[id]; if (!isObj(p)) return;
       const c = newProfile(id, typeof p.name === 'string' ? p.name : '', p.avatar, p.age);
@@ -72,7 +77,7 @@
       if (Array.isArray(p.rewards)) p.rewards.slice(0, 500).forEach(r => { if (isObj(r) && typeof r.type === 'string' && typeof r.item === 'string') c.rewards.push({ id: (r.type + ':' + r.item).slice(0, 80), type: r.type.slice(0, 20), item: r.item.slice(0, 40), date: typeof r.date === 'string' ? r.date.slice(0, 10) : '' }); });
       if (isObj(p.playTime)) Object.keys(p.playTime).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).forEach(k => { c.playTime[k] = int(p.playTime[k], 0, 86400, 0); });
       if (Array.isArray(p.storiesRead)) c.storiesRead = p.storiesRead.filter(x => typeof x === 'string').slice(0, 100).map(x => x.slice(0, 40));
-      if (isObj(p.skills)) Object.keys(p.skills).filter(okKey).forEach(k => { const x = p.skills[k]; if (isObj(x)) c.skills[k] = { score: Math.min(1, Math.max(0, +x.score || 0)), plays: int(x.plays, 0, 1e6, 0) }; });
+      if (isObj(p.skills)) Object.keys(p.skills).filter(okKey).forEach(k => { const x = p.skills[k]; if (isObj(x)) c.skills[k] = { score: Math.min(1, Math.max(0, +x.score || 0)), plays: int(x.plays, 0, 1e6, 0), h: Array.isArray(x.h) ? x.h.slice(-10).map(n => int(n, 0, 3, 0)) : [], d: int(x.d, 0, 1e5, 0), last: typeof x.last === 'string' ? x.last.slice(0, 10) : '' }; });
       c.recre = int(p.recre, 0, 1e6, 0);
       if (isObj(p.garage)) c.garage = { vehicle: String(p.garage.vehicle || '').slice(0, 8), pilot: String(p.garage.pilot || '').slice(0, 8) };
       ['minis', 'missions'].forEach(m => { if (isObj(p[m])) { c[m] = {}; Object.keys(p[m]).filter(okKey).forEach(k => { c[m][k] = int(p[m][k], 0, 1e6, 0); }); } });
@@ -81,35 +86,51 @@
     if (!Object.keys(out.profiles).length) return { ok: false, why: 'aucun profil lisible' };
     const S = defSettings(), s = {};   // réglages : seulement les clés connues, du bon type
     Object.keys(S).forEach(k => { const v = out.settings[k]; if (v !== undefined && typeof v === typeof S[k]) s[k] = v; });
-    ['volume'].forEach(k => { if (s[k] !== undefined) s[k] = Math.min(1, Math.max(0, s[k])); });
+    if (s.volume !== undefined) s.volume = Math.min(1, Math.max(0, s.volume));
     if (s.lang && !['fr', 'en'].includes(s.lang)) delete s.lang;
-    out.settings = s; out.v = SCHEMA;
-    return { ok: true, data: out };
+    out.settings = s;
+    return { ok: true, data: out, from: +o.v || 1 };
   }
-  // mode : 'merge' (garde le meilleur de chaque côté, ne perd rien) ou 'replace'
+  const clone = x => JSON.parse(JSON.stringify(x));
+  const betterSkill = (a, b) => (!a ? b : !b ? a : (b.plays || 0) > (a.plays || 0) ? b : a);
+  function mergeData(cur, inc) {
+    Object.values(inc.profiles).forEach(ip => {
+      const cp = cur.profiles[ip.id];
+      if (!cp) { cur.profiles[ip.id] = ip; return; }
+      Object.keys(ip.progress).forEach(k => { const a = cp.progress[k], b = ip.progress[k]; cp.progress[k] = !a ? b : { stars: Math.max(a.stars, b.stars), last: b.last, plays: Math.max(a.plays, b.plays), errors: Math.max(a.errors, b.errors), hints: Math.max(a.hints, b.hints), updated: a.updated > b.updated ? a.updated : b.updated }; });
+      ip.rewards.forEach(rw => { if (!cp.rewards.some(x => x.id === rw.id)) cp.rewards.push(rw); });
+      Object.keys(ip.playTime).forEach(d => { cp.playTime[d] = Math.max(cp.playTime[d] || 0, ip.playTime[d]); });
+      ip.storiesRead.forEach(s => { if (!cp.storiesRead.includes(s)) cp.storiesRead.push(s); });
+      cp.recre = Math.max(cp.recre || 0, ip.recre || 0);
+      Object.keys(ip.skills || {}).forEach(k => { cp.skills[k] = betterSkill(cp.skills[k], ip.skills[k]); });   // l'historique le plus riche est gardé, jamais remis à zéro
+    });
+    return cur;
+  }
+  // Import : les nouvelles données sont PRÉPARÉES à part, leur écriture est vérifiée possible (écriture d'essai), puis seulement
+  // alors elles remplacent l'état actuel. En cas d'échec, l'état précédent reste intact (en mémoire ET dans le stockage).
+  // mode : 'merge' (garde le meilleur de chaque côté) ou 'replace'.
   function importData(text, mode) {
     const r = validate(text); if (!r.ok) return r;
-    try { localStorage.setItem(KEY + '.backup', JSON.stringify(data)); } catch (e) {}   // copie de sécurité de l'état actuel
-    const inc = r.data;
-    if (mode === 'replace') { data = Object.assign(defaults(), { profiles: inc.profiles, settings: Object.assign(defSettings(), inc.settings) }); data.active = Object.keys(data.profiles)[0]; }
-    else {
-      Object.values(inc.profiles).forEach(ip => {
-        const cp = data.profiles[ip.id];
-        if (!cp) { data.profiles[ip.id] = ip; return; }
-        Object.keys(ip.progress).forEach(k => { const a = cp.progress[k], b = ip.progress[k]; cp.progress[k] = !a ? b : { stars: Math.max(a.stars, b.stars), last: b.last, plays: Math.max(a.plays, b.plays), errors: Math.max(a.errors, b.errors), hints: Math.max(a.hints, b.hints), updated: a.updated > b.updated ? a.updated : b.updated }; });
-        ip.rewards.forEach(rw => { if (!cp.rewards.some(x => x.id === rw.id)) cp.rewards.push(rw); });
-        Object.keys(ip.playTime).forEach(d => { cp.playTime[d] = Math.max(cp.playTime[d] || 0, ip.playTime[d]); });
-        ip.storiesRead.forEach(s => { if (!cp.storiesRead.includes(s)) cp.storiesRead.push(s); });
-        cp.recre = Math.max(cp.recre || 0, ip.recre || 0); cp.skills = {};   // les compétences sont recalculées depuis la progression
-      });
+    const inc = r.data; let next;
+    if (mode === 'replace') { next = Object.assign(defaults(), { profiles: inc.profiles, settings: Object.assign(defSettings(), inc.settings) }); }
+    else { next = mergeData(clone(data), inc); }
+    if (!next.profiles[next.active]) next.active = Object.keys(next.profiles)[0] || null;
+    next.v = SCHEMA;
+    const str = JSON.stringify(next), before = (() => { try { return localStorage.getItem(KEY); } catch (e) { return null; } })();
+    try { localStorage.setItem(KEY + '.tmp', str); localStorage.removeItem(KEY + '.tmp'); }   // écriture d'essai de la taille exacte
+    catch (e) { try { localStorage.removeItem(KEY + '.tmp'); } catch (_) {} setStatus('fail', String(e && e.name)); return { ok: false, kept: true, why: 'stockage plein ou bloqué : l’import est annulé, vos données actuelles sont conservées' }; }
+    try { localStorage.setItem(KEY + '.backup', JSON.stringify(data)); } catch (e) { /* la copie est un plus ; l'import peut continuer si l'écriture principale passe */ }
+    try { localStorage.setItem(KEY, str); if (localStorage.getItem(KEY) !== str) throw new Error('relecture'); }
+    catch (e) {
+      try { if (before === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, before); } catch (_) {}   // on remet l'état d'avant
+      setStatus('fail', String(e && e.name || e.message)); return { ok: false, kept: true, why: 'écriture impossible : l’import est annulé, vos données actuelles sont conservées' };
     }
-    if (!data.profiles[data.active]) data.active = Object.keys(data.profiles)[0] || null;
-    const ok = save();
-    return ok ? { ok: true, n: Object.keys(inc.profiles).length } : { ok: false, why: 'sauvegarde impossible après import (stockage plein ?)' };
+    data = next; if (st.level === 'fail') setStatus('ok');
+    return { ok: true, n: Object.keys(inc.profiles).length, from: r.from };
   }
 
   const Store = {
-    SCHEMA, AVATARS, data: () => data, save, localDay, today: () => localDay(), status: st, validate, importData, defSettings,
+    SCHEMA, AVATARS, KEY, data: () => data, save, localDay, today: () => localDay(), status: st, validate, importData, defSettings,
     onStatus: f => { errListeners.push(f); }, addWiper: f => { wipers.push(f); },
     s: () => data.settings,
     profile: () => data.profiles[data.active] || null,
@@ -132,8 +153,7 @@
     },
     addTime(sec) { const p = this.profile(); if (!p) return; const d = localDay(); p.playTime[d] = (p.playTime[d] || 0) + sec; save(); },
     playedToday() { const p = this.profile(); return p ? (p.playTime[localDay()] || 0) : 0; },
-    // Enregistre une réussite : on garde toujours le meilleur nombre d'étoiles.
-    record(id, stars, errors, hints) {
+    record(id, stars, errors, hints) {   // on garde toujours le meilleur nombre d'étoiles
       const p = this.profile(); if (!p) return { first: false };
       const old = p.progress[id], first = !old;
       p.progress[id] = { stars: Math.max(stars, old ? old.stars : 0), last: stars, plays: (old ? old.plays : 0) + 1, errors: (old ? old.errors : 0) + errors, hints: (old ? old.hints : 0) + hints, updated: localDay() };
@@ -144,12 +164,26 @@
       if (!p.rewards.some(r => r.type === type && r.item === item)) { p.rewards.push({ id: type + ':' + item, type, item, date: localDay() }); save(); }
     },
     exportJSON: () => JSON.stringify(Object.assign({ exported: new Date().toISOString(), note: 'Les enregistrements vocaux restent sur l’appareil et ne sont pas inclus.' }, data), null, 2),
-    // Effacement TOTAL : réglages, profils, progression, copies de sécurité, préférences d'installation et enregistrements vocaux (IndexedDB).
+    // Effacement TOTAL, étape par étape. Chaque opération est CONTRÔLÉE (relecture) ; le résultat dit précisément ce qui a réussi ou non.
+    // Il peut être relancé : refaire l'appel ne fait que terminer ce qui reste. Aucune fausse confirmation : ok = vrai SEULEMENT si tout est effacé.
     async wipeAll() {
-      try { const ks = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf('lumi.') === 0) ks.push(k); } ks.forEach(k => localStorage.removeItem(k)); } catch (e) {}
-      data = defaults();
-      for (const w of wipers) { try { await w(); } catch (e) {} }
-      return true;
+      const steps = [], ls = { name: 'localStorage', ok: true, failed: [] };
+      try {
+        const ks = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && Env.owns(k)) ks.push(k); }
+        ks.forEach(k => { try { localStorage.removeItem(k); } catch (e) { ls.failed.push(k); } });
+        ks.forEach(k => { try { if (localStorage.getItem(k) !== null && ls.failed.indexOf(k) < 0) ls.failed.push(k); } catch (e) { if (ls.failed.indexOf(k) < 0) ls.failed.push(k); } });
+        ls.ok = ls.failed.length === 0; if (!ls.ok) ls.why = 'clés non supprimées : ' + ls.failed.join(', ');
+      } catch (e) { ls.ok = false; ls.why = String(e && e.name || e); }
+      steps.push(ls);
+      for (const w of wipers) {
+        let r; try { r = await w(); } catch (e) { r = { ok: false, name: 'effaceur', why: String(e && e.name || e) }; }
+        if (r === true || r === undefined) r = { ok: true, name: 'effaceur' }; else if (r === false) r = { ok: false, name: 'effaceur', why: 'échec' };
+        steps.push(r);
+      }
+      if (ls.ok) data = defaults();   // la mémoire n'est vidée que si le stockage l'est vraiment : sinon on ne ré-écrase rien
+      const ok = steps.every(s => s.ok);
+      const res = { ok, partial: !ok && steps.some(s => s.ok), steps, failed: steps.filter(s => !s.ok) };
+      Store.lastWipe = res; return res;
     }
   };
   Store.MIGRATIONS = MIGRATIONS; Store._migrate = migrate; Store.MAX_IMPORT = MAX_IMPORT;

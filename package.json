@@ -1,0 +1,13 @@
+{
+  "name": "lumi",
+  "version": "3.1.0",
+  "private": true,
+  "description": "LUMI — application éducative hors ligne pour les 3 à 5 ans (tests Playwright uniquement ; l'application elle-même n'a aucune dépendance).",
+  "scripts": {
+    "test": "playwright test",
+    "serve": "python3 -m http.server 4173 --bind 127.0.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.48.2"
+  }
+}

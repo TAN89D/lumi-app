@@ -281,3 +281,8 @@ body.contrast .tile,body.contrast .gcard,body.contrast .sec,body.contrast .ask{b
 @media (max-height:560px){.hero .lu{width:64px;height:64px}.result .lu{width:110px;height:110px}.tile{padding:6px}}
 .play{min-height:calc(100dvh - 28px - env(safe-area-inset-bottom))}
 body.calm *{animation:none!important}
+
+/* V3.1 */
+.ribbon{position:fixed;left:0;top:0;background:#6a1b9a;color:#fff;font:800 .62rem system-ui,sans-serif;padding:2px 8px;border-radius:0 0 10px 0;z-index:99;max-width:70vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
+.adv{margin:6px 0;padding:8px 10px;background:#f3f8e2;border-radius:12px;font-size:.92rem}
+.note{font-size:.8rem;color:#8a7c52;margin:8px 0 0}
