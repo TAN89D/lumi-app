@@ -207,7 +207,7 @@
     const f1 = Rules.nextGame(CATS, 5, (c, g) => (c === 'letters' && g === 'listen' ? 3 : 0), () => 0); ok(!(f1[0] === 'letters' && f1[1] === 'listen'), 'un jeu jamais joué passe avant un jeu déjà réussi');
     const fAll = Rules.nextGame(CATS, 4, (c, g) => (c === 'colors' && g === 'sort' ? 1 : 3), () => 0); eq(fAll, ['colors', 'sort'], 'un jeu à 1 étoile est proposé avant de rejouer des jeux à 3 étoiles');
     ok(Rules.nextGame([{ id: 'x', games: [{ id: 'y', lvl: 5 }] }], 3, none, () => 0) !== undefined, 'aucun jeu à l’âge demandé : repli sur les plus faciles, sans planter');
-    ok(Games.CATS.every(c => c.games.every(g => [3, 4, 5].includes(g.lvl))), 'chaque jeu a un niveau d’âge');
+    ok(Games.CATS.every(c => c.games.every(g => [3, 4, 5, 6, 7, 8].includes(g.lvl))), 'chaque jeu a un niveau d’âge (3 à 8 ans)');
 
     // ============ 6. Compétences ============
     group('Compétences — réussite, répétition, maîtrise');
@@ -378,14 +378,14 @@
     ok(document.querySelector('.h-start') && /Commencer/.test(document.querySelector('.h-start').textContent) && document.querySelector('.h-parents') && document.querySelector('.h-mission'), 'boutons Commencer, Parents et mission présents');
     P2.progress = { 'g:letters:listen': { stars: 3, plays: 1, errors: 0, hints: 0, last: 3, updated: '2026-01-01' }, 'g:numbers:count': { stars: 2, plays: 1, errors: 0, hints: 0, last: 2, updated: '2026-01-01' } }; A2.go('home');
     ok(/5 étoiles/.test(document.querySelector('.h-prog .chip2').textContent), 'étoiles affichées = étoiles réellement gagnées (3 + 2)');
-    ok(document.querySelector('.g-letters .gs').textContent.indexOf('★ 3/9') >= 0 && document.querySelector('.g-numbers .gs').textContent.indexOf('★ 2/15') >= 0, 'étoiles par monde calculées depuis la progression');
+    ok(document.querySelector('.g-letters .gs').textContent.indexOf('★ 3/' + Games.CATS.find(c => c.id === 'letters').games.length * 3) >= 0 && document.querySelector('.g-numbers .gs').textContent.indexOf('★ 2/' + Games.CATS.find(c => c.id === 'numbers').games.length * 3) >= 0, 'étoiles par monde calculées depuis la progression');
     P2.progress = {}; A2.go('home'); ok(/0 étoiles/.test(document.querySelector('.h-prog .chip2').textContent) && /0 \/ \d+ trophées/.test(document.querySelector('.h-prog').textContent), 'profil vierge : 0 étoile, 0 trophée (aucune donnée fictive)');
     let opened = 0, listed = 0;
     for (const g of Games.GROUPS) { A2.go('home'); document.querySelector('.gcat[data-id="' + g.id + '"]').click(); if (A2.screen === 'grp') { opened++; listed += document.querySelectorAll('.hub .gcard').length; } }
     ok(opened === 8 && listed === CATS2.reduce((a, c) => a + c.games.length, 0), 'chaque carte ouvre son monde ; tous les jeux et histoires sont accessibles (' + listed + ')');
     let started = 0; A2.go('grp', { id: 'shapes' }); const ids2 = [...document.querySelectorAll('.hub .gcard')].map(b => [b.dataset.c, b.dataset.g]);
     ids2.forEach(([c0, g0]) => { A2.go('grp', { id: 'shapes' }); document.querySelector('.hub .gcard[data-c="' + c0 + '"][data-g="' + g0 + '"]').click(); if (A2.screen === 'play') started++; });
-    ok(started === 7, 'les jeux de « Formes et logique » (deux catégories) démarrent tous');
+    ok(started === ids2.length && started >= 7, 'les jeux de « Formes et logique » (deux catégories) démarrent tous');
     const tabs = ['home', 'games', 'trophies', 'progress'], navOk = [];
     tabs.forEach((t0, i) => { A2.go('home'); document.querySelectorAll('.nav4 button')[i].click(); navOk.push(A2.screen === t0 && document.querySelector('.nav4 button.on') === document.querySelectorAll('.nav4 button')[i] && document.querySelector('.nav4 [aria-current="page"]')); });
     ok(document.querySelectorAll('.nav4 button').length === 4 && navOk.every(Boolean), 'quatre onglets, tous fonctionnels, l’onglet actif est signalé (aria-current)');
@@ -503,9 +503,64 @@
       Object.assign(sx, keepV); speechSynthesis.speak = oSp; speechSynthesis.getVoices = oGv; window.SpeechSynthesisUtterance = oUt; Sound.refresh();
       Sound.stop = oStop;
       const swT = await (await fetch('../sw.js', { cache: 'no-store' })).text();
-      ok(swT.indexOf("'js/mascot.js'") >= 0 && swT.indexOf("'js/story-quiz.js'") >= 0 && /const VERSION = '3-4-/.test(swT), 'mascotte et questions sont dans le cache hors ligne (version 3-4-x)');
+      ok(swT.indexOf("'js/mascot.js'") >= 0 && swT.indexOf("'js/story-quiz.js'") >= 0 && /const VERSION = '3-[4-9]-/.test(swT), 'mascotte et questions sont dans le cache hors ligne (version 3-x)');
       const old = JSON.parse(snap4); P4.progress = old.progress; P4.rewards = old.rewards; P4.storiesRead = old.storiesRead; P4.skills = old.skills; P4.recre = old.recre; P4.age = old.age; P4.playTime = old.playTime; Store.save(); A4.go('home');
     } else ok(false, 'application non chargée dans la page de test');
+
+
+    // ============ 10e. V3.5 : niveaux 3 à 8 ans, décors, séances variées, Voyage de Lumi ============
+    group('V3.5 — niveaux 3 à 8 ans');
+    ok([3, 4, 5, 6, 7, 8].every(a => Rules.caps(a) && Rules.caps(a).choices >= 3) && Rules.caps(8).calcMax === 100 && Rules.caps(6).calcMax === 20 && Rules.caps(5).countMax <= Rules.caps(7).countMax + 10, 'paliers 3, 4, 5, 6, 7 et 8 ans définis (calculs jusqu’à 20, 50 puis 100)');
+    ok(Rules.caps(7).pairs > Rules.caps(4).pairs && Rules.caps(8).suiteLen.length === 3, 'la difficulté monte avec l’âge (mémoire, suites)');
+    const imp = Store.validate(JSON.stringify({ v: 3, active: 'p1', settings: {}, profiles: { p1: { id: 'p1', name: 'Aïssa', avatar: 'awa', age: 8, progress: {}, stickers: ['letters', 'nature', '<b>x</b>', 'letters'] }, p2: { id: 'p2', name: 'Old', avatar: 'awa', age: 9, progress: {} } } }));
+    ok(imp.ok && imp.data.profiles.p1.age === 8 && imp.data.profiles.p2.age === 4 && imp.data.profiles.p1.stickers.join() === 'letters,nature', 'un profil de 8 ans est accepté ; un âge hors 3-8 revient à 4 ; autocollants filtrés et sans doublon');
+    const NEWG = [['numbers', 'add'], ['numbers', 'sub'], ['numbers', 'compare'], ['numbers', 'tables'], ['numbers', 'money'], ['numbers', 'clock'], ['letters', 'missing'], ['logic', 'numseq'], ['countries', 'capitals']];
+    const badN = [];
+    ['fr', 'en'].forEach(lg => { I18n.setLang(lg); NEWG.forEach(([c0, g0]) => { const cd = Games.CATS.find(c => c.id === c0), gd = cd && cd.games.find(g => g.id === g0); if (!gd) { badN.push('absent ' + c0 + '/' + g0); return; }
+      if (gd.lvl < 6) badN.push(c0 + '/' + g0 + ' niveau');
+      [3, 4, 5, 6, 7, 8].forEach(age => [2, 3].forEach(n => { let rs; try { rs = gd.make(n, { age }); } catch (e) { badN.push(c0 + '/' + g0 + ' plante à ' + age + ' ans : ' + e.message); return; }
+        rs.forEach(r => { const okc = r.choices.filter(x => x.ok).length; if (okc !== 1) badN.push(c0 + '/' + g0 + ' ' + lg + ' ' + age + ' : ' + okc + ' bonnes réponses'); if (new Set(r.choices.map(x => x.h)).size !== r.choices.length) badN.push(c0 + '/' + g0 + ' réponses en double'); if (!r.ask.text || /\{|undefined|NaN/.test(r.ask.text)) badN.push(c0 + '/' + g0 + ' consigne invalide : ' + r.ask.text); if (lg === 'en' && /[éèêàùç]/.test(r.ask.text)) badN.push(c0 + '/' + g0 + ' consigne française en anglais'); if (r.choices.length > 4 || r.choices.length < 2) badN.push(c0 + '/' + g0 + ' nombre de choix'); }); })); }); });
+    I18n.setLang('fr');
+    ok(badN.length === 0, 'les 9 nouveaux jeux (6-8 ans) : une seule bonne réponse, pas de doublon, consignes valides en français et en anglais, aucun plantage à tous les âges', badN.slice(0, 4).join(' | '));
+    const calcOk = []; for (let i = 0; i < 40; i++) { Games.CATS.find(c => c.id === 'numbers').games.filter(g => ['add', 'sub', 'tables'].includes(g.id)).forEach(g => g.make(3, { age: 8 }).forEach(r => { const m = /(\d+) ([+−×]) (\d+) =/.exec(r.show.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')); const v = m && (m[2] === '+' ? +m[1] + +m[3] : m[2] === '−' ? m[1] - m[3] : m[1] * m[3]); calcOk.push(m && r.choices.find(c => c.ok).h === String(v)); })); }
+    ok(calcOk.length > 100 && calcOk.every(Boolean), 'additions, soustractions et tables : la bonne réponse est mathématiquement juste (' + calcOk.length + ' vérifiées)');
+    ok(Rules.adaptAge(5, [3, 3]) === 6 && Rules.adaptAge(8, [3, 3]) === 8 && Rules.adaptAge(5, [1, 1]) === 4 && Rules.adaptAge(3, [1, 1]) === 3 && Rules.adaptAge(5, [3, 1]) === 5 && Rules.adaptAge(5, [3]) === 5, 'difficulté adaptative douce : +1 après deux réussites, -1 après deux échecs, bornée à 3-8');
+
+    group('V3.5 — lecteur de planches d’animation (personnages 3D à venir)');
+    ok(Sprite.parseName('lumi-wave-4x2.png').frames === 8 && Sprite.parseName('x-6x1.webp').cols === 6 && Sprite.parseName('sans-grille.png') === null, 'le nom d’une planche donne sa grille (4x2 = 8 images)');
+    ok(Sprite.frame(0, 4, 2).x === 0 && Sprite.frame(3, 4, 2).x === 100 && Sprite.frame(4, 4, 2).y === 100 && Sprite.frame(5, 4, 2).x > 30 && Sprite.frame(5, 4, 2).x < 40, 'position exacte de chaque image dans la planche');
+    const spH = document.createElement('div'); document.body.appendChild(spH); spH.innerHTML = Sprite.html({ src: 'data:image/png;base64,AAAA', cols: 2, rows: 2, fps: 40, label: 'Test' }); const spE = spH.firstChild, spC = Sprite.play(spE); await wait(150); const moved = +spE.dataset.i; spC.stop();
+    ok(moved > 0 && spE.getAttribute('role') === 'img' && spE.getAttribute('aria-label') === 'Test', 'la planche s’anime (images qui défilent) et reste accessible');
+    const oMM2 = window.matchMedia; window.matchMedia = () => ({ matches: true }); const spE2 = document.createElement('span'); spE2.className = 'sprite'; Object.assign(spE2.dataset, { cols: 2, rows: 2, frames: 4, fps: 40, loop: 1 }); spH.appendChild(spE2); Sprite.play(spE2); await wait(150); const frozen = +spE2.dataset.i; window.matchMedia = oMM2; spH.remove();
+    ok(frozen === 0, 'animations réduites ou mode calme : seule la première image est affichée (image fixe)');
+
+    group('V3.5 — décors africains');
+    ok(Decor.THEMES.length === 12 && Decor.THEMES.every(th => /<svg class="dc dc-ground"/.test(Decor.html(th)) && /dc-top/.test(Decor.html(th)) && /aria-hidden="true"/.test(Decor.html(th))), 'douze décors (un par monde + accueil, parents, nuit), vectoriels, cachés aux lecteurs d’écran');
+    ok(Object.keys({ letters: 1, numbers: 1, shapes: 1, colors: 1, music: 1, nature: 1, countries: 1, stories: 1 }).every(w => Decor.themeFor('grp', { id: w }, null) === w) && Decor.themeFor('play', {}, { cat: 'logic' }) === 'shapes' && Decor.themeFor('play', {}, { cat: 'stories' }) === 'stories' && Decor.themeFor('lock') === 'night' && Decor.themeFor('parent') === 'parent' && Decor.themeFor('voyage') === 'countries', 'chaque monde et chaque jeu a son décor');
+    const A5 = window.LumiApp; if (A5) { ['home', 'games', 'trophies', 'progress', 'voyage', 'recre', 'profiles', 'welcome'].forEach(s0 => A5.go(s0)); A5.go('grp', { id: 'nature' }); const dEl = document.getElementById('decor'); ok(!!dEl && dEl.getAttribute('aria-hidden') === 'true' && document.body.dataset.decor === 'nature' && dEl.querySelector('svg.dc-ground'), 'le décor est présent derrière chaque écran et change avec le monde'); A5.go('home'); }
+    const cssV35 = await (await fetch('../css/design.css', { cache: 'no-store' })).text();
+    ok(/#decor\{position:fixed;inset:0;z-index:0;pointer-events:none/.test(cssV35) && /body\.calm #decor \.dc-fly/.test(cssV35) && /prefers-reduced-motion:reduce\)\{#decor/.test(cssV35), 'décors : jamais cliquables, derrière l’interface, animations coupées en mode calme et en animations réduites');
+
+    group('V3.5 — séance variée et Voyage de Lumi');
+    const cats5 = Games.CATS, st5 = () => 0, pl = Rules.sessionPlan(cats5, 5, st5, Math.random, 5);
+    ok(pl.length === 5 && new Set(pl.map(x => x[0])).size === 5 && pl.every(([c, g]) => cats5.find(z => z.id === c).games.find(z => z.id === g).lvl <= 5), 'une séance = 5 activités de familles différentes, toutes adaptées à l’âge');
+    ok(Rules.sessionPlan(cats5, 3, st5, Math.random, 5).every(([c, g]) => cats5.find(z => z.id === c).games.find(z => z.id === g).lvl <= 3), 'à 3 ans, la séance ne propose que des jeux de niveau 3');
+    const P5 = Store.profile(), snap5 = JSON.stringify({ progress: P5.progress, rewards: P5.rewards, storiesRead: P5.storiesRead, skills: P5.skills, recre: P5.recre, age: P5.age, stickers: P5.stickers, playTime: P5.playTime });
+    if (A5) {
+      P5.age = 5; A5.go('home'); document.querySelector('.h-start').click(); const g1 = A5.game, dots = document.querySelectorAll('.sdots i').length;
+      ok(A5.screen === 'play' && dots === 5 && !!document.querySelector('.sdots i.now'), '« Commencer » lance une séance de 5 activités avec ses points de progression');
+      A5.go('voyage'); ok(document.querySelectorAll('.vs-btn').length === 8 && !!document.querySelector('.h-voyage') === false, 'le Voyage de Lumi montre les huit étapes');
+      A5.go('home'); ok(!!document.querySelector('.h-voyage'), 'accès au Voyage depuis l’accueil');
+      A5.go('voyage'); document.querySelector('.vs-btn.g-nature').click(); const first5 = A5.game; ok(A5.screen === 'play' && first5.cat === 'nature' && document.querySelectorAll('.sdots i').length === 3, 'une étape lance une mini-séance de 3 jeux du monde choisi');
+      const keepSk = (P5.stickers || []).slice(); P5.stickers = [];
+      for (let k = 0; k < 3; k++) { A5.finish(); if (k < 2) document.querySelector('[data-act="snext"]').click(); }
+      ok(A5.screen === 'result' && P5.stickers.length === 1 && P5.stickers[0] === 'nature' && !!document.querySelector('.newc.sticker'), 'finir les 3 jeux d’une étape donne l’autocollant du monde (une seule fois)');
+      A5.go('voyage'); document.querySelector('.vs-btn.g-nature').click(); for (let k = 0; k < 3; k++) { A5.finish(); if (k < 2) document.querySelector('[data-act="snext"]').click(); }
+      ok(P5.stickers.length === 1 && !document.querySelector('.newc.sticker'), 'refaire une étape ne donne pas deux fois le même autocollant');
+      const ex = JSON.parse(Store.exportJSON()), im = Store.validate(JSON.stringify(ex)); ok(im.ok && im.data.profiles[P5.id].stickers.join() === 'nature', 'les autocollants sont sauvegardés et restaurés (export / import)');
+      P5.stickers = keepSk;
+    }
+    Object.assign(P5, JSON.parse(snap5)); Store.save(); if (A5) A5.go('home');
 
     // ============ 11. Application ============
     group('Application — écrans');
