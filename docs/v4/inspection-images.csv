@@ -1,0 +1,66 @@
+﻿fichier;type;dimensions;mode;poids_Ko;alpha_reel;coins_transparents;pixels_semi_transp_%;frange_couleur_moy;marge_min_%;marge_8%;poids_ok;sha256_12
+01_LOGO_A_VALIDE_ET_VARIANTES/00_LOGO_A_SOURCE_VALIDE.png;logo;1774x887;RGBA;1278;oui;True;2.63;223,182,114 (2862 px);0.0;NON (0.0 %);NON (1277 Ko > 300);dd2cf88ff0c6
+01_LOGO_A_VALIDE_ET_VARIANTES/00_LOGO_B_MEDAILLON_ALTERNATIF_NON_VALIDE.png;logo;1254x1254;RGBA;2071;oui;True;0.58;231,150,11 (299 px);0.2;NON (0.2 %);NON (2071 Ko > 300);26014a3ec336
+01_LOGO_A_VALIDE_ET_VARIANTES/favicon-B-proposition-32.png;icone;32x32;RGBA;3;non (image presque entièrement opaque ou vide);False;0.0;aucune;0.0;NON (0.0 %);oui;fc6c2ef98323
+01_LOGO_A_VALIDE_ET_VARIANTES/favicon-B-proposition-64.png;icone;64x64;RGBA;9;non (image presque entièrement opaque ou vide);False;0.0;aucune;0.0;NON (0.0 %);oui;78fc2441b16d
+01_LOGO_A_VALIDE_ET_VARIANTES/icone-B-maskable-proposition-512.png;icone;512x512;RGBA;224;non (image presque entièrement opaque ou vide);False;0.0;aucune;0.0;NON (0.0 %);NON (223 Ko > 60);cf2cac8f197b
+01_LOGO_A_VALIDE_ET_VARIANTES/icone-B-proposition-1024.png;icone;1024x1024;RGBA;1069;non (image presque entièrement opaque ou vide);False;0.0;aucune;0.0;NON (0.0 %);NON (1069 Ko > 60);df0e3c3ac3ff
+01_LOGO_A_VALIDE_ET_VARIANTES/icone-B-proposition-192.png;icone;192x192;RGBA;55;non (image presque entièrement opaque ou vide);False;0.0;aucune;0.0;NON (0.0 %);oui;8d792c146763
+01_LOGO_A_VALIDE_ET_VARIANTES/icone-B-proposition-512.png;icone;512x512;RGBA;302;non (image presque entièrement opaque ou vide);False;0.0;aucune;0.0;NON (0.0 %);NON (301 Ko > 60);1fb0ae293b11
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-A-fond-clair-1024.png;logo;1024x1024;RGBA;349;non (image presque entièrement opaque ou vide);False;0.0;aucune;0.0;NON (0.0 %);NON (348 Ko > 300);4ccb7ec148fc
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-A-fond-sombre-1024.png;logo;1024x1024;RGBA;355;non (image presque entièrement opaque ou vide);False;0.0;aucune;0.0;NON (0.0 %);NON (355 Ko > 300);4b2c9166131d
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-A-monochrome-blanc-1024.png;logo;1024x1024;RGBA;53;oui;True;1.12;255,255,255 (497 px);15.1;oui;oui;7d6347d8d1ef
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-A-monochrome-noir-1024.png;logo;1024x1024;RGBA;53;oui;True;1.12;25,25,25 (497 px);15.1;oui;oui;2d7742c14227
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-A-transparent-1024.png;logo;1024x1024;RGBA;403;oui;True;1.12;224,185,118 (497 px);15.1;oui;NON (402 Ko > 300);9ed2f13f5b2b
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-A-transparent-1024.webp;logo;1024x1024;RGBA;78;oui;True;1.12;225,185,114 (497 px);15.1;oui;oui;21b5017bced5
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-A-transparent-2048.png;logo;2048x2048;RGBA;1396;oui;True;1.14;224,184,116 (463 px);15.1;oui;NON (1395 Ko > 300);2d62c4a38907
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-A-transparent-2048.webp;logo;2048x2048;RGBA;218;oui;True;1.14;225,184,115 (463 px);15.1;oui;oui;8f5b28cf8251
+01_LOGO_A_VALIDE_ET_VARIANTES/logo-B-medallion-1024.png;logo;1024x1024;RGBA;1324;oui;True;0.54;229,145,11 (200 px);2.1;NON (2.1 %);NON (1323 Ko > 300);8a88b3bdc065
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/00_Planche_recapitulative.png;autre;1220x1145;RGB;1681;non (pas de canal alpha);;;;;;;033e3f857092
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/01_Maquettes_PNG/01_Bienvenue.png;autre;941x1672;RGB;1658;non (pas de canal alpha);;;;;;;60bb1b4e6db9
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/01_Maquettes_PNG/02_Tableau_de_bord.png;autre;941x1672;RGB;2328;non (pas de canal alpha);;;;;;;a8a5b4aed624
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/01_Maquettes_PNG/03_Exercice_Lettres.png;autre;941x1672;RGB;2011;non (pas de canal alpha);;;;;;;cdadd08682c2
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/01_Maquettes_PNG/04_Reussite_Recompenses.png;autre;941x1672;RGB;1908;non (pas de canal alpha);;;;;;;c9e69cb2f40f
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/01_Maquettes_PNG/05_Histoire_Anansi.png;autre;941x1672;RGB;2161;non (pas de canal alpha);;;;;;;776dd5c328b8
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/01_Maquettes_PNG/06_Espace_parents_EXTRAIT_planche.jpg;autre;296x664;RGB;103;non (pas de canal alpha);;;;;;;580a7259ee81
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/01_Maquettes_PNG/07_Profils_Enfants.png;autre;941x1672;RGB;1881;non (pas de canal alpha);;;;;;;2295234c8b24
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/01_Maquettes_PNG/08_Parametres.png;autre;941x1672;RGB;1908;non (pas de canal alpha);;;;;;;8bb2c1fde6f5
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/02_References_Visuelles/Accueil_Grille_Categories.png;autre;1024x1536;RGB;1774;non (pas de canal alpha);;;;;;;8eb6b81f87a6
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/02_References_Visuelles/Exercice_Lumi_Lion.png;autre;1024x1536;RGB;1649;non (pas de canal alpha);;;;;;;765cc3db36db
+02_MAQUETTES_ET_REFERENCES_V3_4/LUMI_Pack_Visuels_V3_4/02_References_Visuelles/Planche_8_Ecrans.png;autre;1184x1328;RGB;2405;non (pas de canal alpha);;;;;;;d53b9b8c2b34
+03_REFERENCES_PERSONNAGES/REF-01_TURNAROUND/REF-01_ENSEMBLE_REFERENCES_BROUILLON.png;perso;1536x1024;RGBA;2886;non (image presque entièrement opaque ou vide);True;16.54;191,216,240 (2162 px);0.0;NON (0.0 %);NON (2886 Ko > 250);ca31eff9e352
+03_REFERENCES_PERSONNAGES/REF-01_TURNAROUND/REF-01_PLANCHE_REFERENCE_A_RETOUCHER.png;perso;1536x1024;RGBA;2815;oui;True;22.63;201,161,137 (12122 px);0.0;NON (0.0 %);NON (2815 Ko > 250);1b074907a8ff
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/APERCU_REF-02.jpg;perso;1280x724;RGB;187;non (pas de canal alpha);;;;;;oui;384edcb7457d
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-content.png;perso;1024x1024;RGBA;964;oui;True;1.17;189,101,58 (432 px);6.9;NON (6.9 %);NON (963 Ko > 250);d21514e7e662
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-endormi.png;perso;1024x1024;RGBA;792;oui;True;1.84;187,108,59 (540 px);6.9;NON (6.9 %);NON (791 Ko > 250);874dcc3fc5e1
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-expressions-4x2.png;perso;4096x2048;RGBA;6240;oui;True;1.78;196,115,70 (991 px);2.2;NON (2.2 %);NON (6240 Ko > 250);6d1daf7d6c8c
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-fier.png;perso;1024x1024;RGBA;706;oui;True;1.58;197,117,65 (410 px);6.9;NON (6.9 %);NON (706 Ko > 250);87e5ba53cc16
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-neutre.png;perso;1024x1024;RGBA;773;oui;True;1.97;202,119,69 (575 px);6.9;NON (6.9 %);NON (773 Ko > 250);f71e89b0c96f
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-reflechi.png;perso;1024x1024;RGBA;720;oui;True;1.87;187,110,71 (555 px);6.9;NON (6.9 %);NON (719 Ko > 250);a974a2681ab0
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-surpris.png;perso;1024x1024;RGBA;754;oui;True;2.0;191,113,68 (625 px);6.9;NON (6.9 %);NON (754 Ko > 250);78bec27fa4a4
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-tres-content.png;perso;1024x1024;RGBA;742;oui;True;1.96;201,117,70 (554 px);6.9;NON (6.9 %);NON (742 Ko > 250);1a954c34b0cb
+03_REFERENCES_PERSONNAGES/REF-02_LUMI/LUMI_V4_REF-02_Expressions/REF-02-lumi-triste-doux.png;perso;1024x1024;RGBA;716;oui;True;1.86;200,120,74 (520 px);6.9;NON (6.9 %);NON (716 Ko > 250);85da019222ca
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/APERCU_REF-03.jpg;perso;1536x1024;RGB;352;non (pas de canal alpha);;;;;;NON (351 Ko > 250);34f367bcd492
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-abdou-endormi.png;perso;1024x1024;RGBA;542;oui;True;2.1;120,110,103 (609 px);8.5;oui;NON (542 Ko > 250);80deb9e6b177
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-abdou-fier.png;perso;1024x1024;RGBA;553;oui;True;2.11;132,111,99 (612 px);8.5;oui;NON (553 Ko > 250);89d40d64e1cf
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-abdou-joyeux.png;perso;1024x1024;RGBA;594;oui;True;2.68;118,97,95 (775 px);8.6;oui;NON (593 Ko > 250);fd4d4790e383
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-abdou-neutre.png;perso;1024x1024;RGBA;572;oui;True;2.44;114,101,102 (637 px);8.5;oui;NON (572 Ko > 250);e9b7f5a82ebf
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-abdou-planche-3x2.png;perso;1536x1024;RGBA;1045;oui;True;2.02;129,104,91 (836 px);5.6;NON (5.6 %);NON (1044 Ko > 250);c7e7258204f0
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-abdou-reflechit.png;perso;1024x1024;RGBA;541;oui;True;2.14;141,113,92 (582 px);8.6;oui;NON (541 Ko > 250);f98c48e77751
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-abdou-surpris.png;perso;1024x1024;RGBA;584;oui;True;2.2;128,105,95 (645 px);8.5;oui;NON (584 Ko > 250);8a36225c9a65
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-awa-endormi.png;perso;1024x1024;RGBA;559;oui;True;3.46;128,80,57 (818 px);8.5;oui;NON (558 Ko > 250);5bee88321513
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-awa-fier.png;perso;1024x1024;RGBA;602;oui;True;3.51;130,81,62 (863 px);8.6;oui;NON (602 Ko > 250);184097370016
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-awa-joyeux.png;perso;1024x1024;RGBA;595;oui;True;3.62;120,74,52 (864 px);8.5;oui;NON (595 Ko > 250);879309fba09f
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-awa-neutre.png;perso;1024x1024;RGBA;582;oui;True;4.15;125,79,57 (851 px);8.6;oui;NON (581 Ko > 250);ac52ac897f24
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-awa-planche-3x2.png;perso;1536x1024;RGBA;1082;oui;True;3.25;128,80,60 (1217 px);5.7;NON (5.7 %);NON (1081 Ko > 250);5c79c548bd42
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-awa-reflechit.png;perso;1024x1024;RGBA;576;oui;True;3.79;129,82,60 (826 px);8.5;oui;NON (576 Ko > 250);443d6d771b89
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-awa-surpris.png;perso;1024x1024;RGBA;597;oui;True;3.78;131,82,58 (875 px);8.6;oui;NON (597 Ko > 250);4778359c3321
+03_REFERENCES_PERSONNAGES/REF-03_ABDOU_AWA/LUMI_V4_REF-03/ref03-planche-brute-6x2.png;perso;1536x1024;RGBA;2411;oui;True;5.35;124,90,77 (1764 px);0.0;NON (0.0 %);NON (2410 Ko > 250);3ec35c809bb7
+03_REFERENCES_PERSONNAGES/REF-04_NOUVEAUX/REF-04/APERCU_REF-04.jpg;perso;1280x480;RGB;81;non (pas de canal alpha);;;;;;oui;3e5f6119196c
+03_REFERENCES_PERSONNAGES/REF-04_NOUVEAUX/REF-04/REF-04_PLANCHA_SOURCE.png;perso;2172x724;RGBA;2188;oui;True;4.09;167,130,121 (8168 px);0.3;NON (0.3 %);NON (2187 Ko > 250);5aabb431dbbe
+03_REFERENCES_PERSONNAGES/REF-04_NOUVEAUX/REF-04/REF-04_fanta.png;perso;1024x1024;RGBA;547;oui;True;1.62;165,107,104 (444 px);5.9;NON (5.9 %);NON (547 Ko > 250);514384d56a21
+03_REFERENCES_PERSONNAGES/REF-04_NOUVEAUX/REF-04/REF-04_grandmere-conteuse.png;perso;1024x1024;RGBA;854;oui;True;1.6;162,98,96 (417 px);5.9;NON (5.9 %);NON (853 Ko > 250);92a3c2416699
+03_REFERENCES_PERSONNAGES/REF-04_NOUVEAUX/REF-04/REF-04_grandpere-griot.png;perso;1024x1024;RGBA;925;oui;True;3.25;179,154,141 (1232 px);6.0;NON (6.0 %);NON (924 Ko > 250);b675b837ef7e
+03_REFERENCES_PERSONNAGES/REF-04_NOUVEAUX/REF-04/REF-04_moussa.png;perso;1024x1024;RGBA;463;oui;True;1.59;142,118,110 (476 px);6.0;NON (6.0 %);NON (463 Ko > 250);54ace04e6b5e
+04_SPRITES_PROTO_NON_VALIDES/L-01_EXPERIMENTAL_idle_4x2_SOURCE_TAILLE_NON_CONFORME.png;sprite;1774x887;RGBA;1503;oui;True;3.81;178,102,49 (2821 px);0.2;NON (0.2 %);NON (1503 Ko > 600);225668cd5fda
+08_ARCHIVES_ET_BROUILLONS/infographie_prototype_non_conforme_non_utilisable.png;autre;1536x1024;RGBA;2833;oui;False;26.11;180,194,195 (8398 px);0.0;NON (0.0 %);;8ecb01211af8
