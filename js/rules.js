@@ -39,5 +39,21 @@ window.Rules = (function () {
     const partial = ok.find(([c, g]) => starsOf(c, g) < 3); if (partial) return partial;
     return ok[Math.floor(rnd() * ok.length) % ok.length];
   }
-  return { gateChallenge, gateCheck, GATE, sessionState, caps, CAPS, nextGame };
+  // ---- mission du jour ----
+  // Déterministe : même profil + même date LOCALE + même âge = même mission, toute la journée (elle ne change pas quand l'enfant joue).
+  // Elle varie d'un jour à l'autre et d'un profil à l'autre, ne propose que des jeux adaptés à l'âge, et évite les jeux déjà maîtrisés (3 étoiles
+  // obtenues un jour précédent). info(catId, gameId) → { stars, updated } ; letters : lettres disponibles dans la langue (facultatif).
+  const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  function dailyMission(cats, age, day, profileId, info, letters) {
+    const all = [];
+    cats.forEach(c => c.games.forEach(g => { if ((g.lvl || 3) <= age) all.push([c.id, g.id]); }));
+    if (!all.length) return null;
+    const open = all.filter(([c, g]) => { const i = info(c, g) || {}; return !(i.stars >= 3 && i.updated !== day); });
+    const list = open.length ? open : all, seed = hash(String(profileId) + '|' + day + '|' + age);
+    const pickIdx = list.length ? seed % list.length : 0, m = { cat: list[pickIdx][0], game: list[pickIdx][1] };
+    if (m.cat === 'letters' && letters && letters.length) m.letter = letters[hash(String(profileId) + '#' + day) % letters.length];
+    const i = info(m.cat, m.game) || {}; m.done = i.updated === day && i.stars > 0;
+    return m;
+  }
+  return { gateChallenge, gateCheck, GATE, sessionState, caps, CAPS, nextGame, dailyMission, hash };
 })();
