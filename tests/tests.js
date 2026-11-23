@@ -411,6 +411,32 @@
     ok(/srcset=/.test(heroTag) && /decoding="async"/.test(heroTag) && /width="941" height="435"/.test(heroTag) && /alt=""/.test(heroTag), 'image du héros : srcset, décodage asynchrone, dimensions réservées, décorative (alt vide)');
     ok(!/https?:\/\//.test(heroTag.replace(/http:\/\/www\.w3\.org[^'"]*/g, '')) && !/url\(\s*https?:/.test(await (await fetch('../css/design.css', { cache: 'no-store' })).text()), 'aucune ressource externe : chemins relatifs compatibles GitHub Pages');
 
+    // ============ 10c. Refonte V3.3 ============
+    group('Design V3.3 — bienvenue, réussite, profils, parents');
+    const imgs3 = ['assets/img/guide-boy.jpg', 'assets/img/lion-cheer.jpg'];
+    const sizes3 = await Promise.all(imgs3.map(f => fetch('../' + f, { cache: 'no-store' }).then(r => r.ok ? r.blob().then(b => b.size) : 0)));
+    ok(sizes3.every(s => s > 0 && s < 90000) && imgs3.every(f => swText.indexOf("'" + f + "'") >= 0), 'nouvelles illustrations : légères (< 90 Ko) et dans le cache hors ligne (' + sizes3.map(s => Math.round(s / 1024) + ' Ko').join(', ') + ')');
+    const cssText = await (await fetch('../css/design.css', { cache: 'no-store' })).text();
+    ok(/prefers-reduced-motion:reduce/.test(cssText) && /body\.calm \.w-chars/.test(cssText), 'animations coupées si « réduire les animations » ou mode calme');
+    const A3 = window.LumiApp, P3 = Store.profile(), keep3 = { lang: Store.s().lang, name: P3.name };
+    if (A3) {
+      A3.go('welcome'); const wtxt = document.querySelector('.welcome').textContent;
+      ok(/Bienvenue !/.test(wtxt) && /Prêt\(e\) à apprendre, jouer et explorer le monde avec nous \?/.test(wtxt) && !!document.querySelector('.w-chars') && !document.querySelector('.nav4'), 'écran de bienvenue : message, personnages, pas de barre d’onglets');
+      document.querySelector('[data-act="begin"]').click(); const afterBegin = A3.screen;
+      ['games', 'trophies', 'progress', 'home'].forEach(s0 => A3.go(s0)); ok(afterBegin === 'home' && A3.screen === 'home' && !document.querySelector('.welcome'), '« Commencer » ouvre l’accueil ; la bienvenue ne revient pas en changeant d’onglet');
+      I18n.setLang('en'); A3.go('welcome'); ok(/Welcome!/.test(document.querySelector('.welcome').textContent) && !/[éèêàùç]/.test(document.querySelector('.welcome').textContent), 'bienvenue en anglais sans texte français'); I18n.setLang('fr');
+      const fakeCtx = { t: I18n.t, IC: { play: '', replay: '', home: '' } };
+      [0, 1, 2, 3].forEach(n => { const box = document.createElement('div'); box.innerHTML = Home.result(fakeCtx, { name: 'Abdou', stars: n, reward: '', recre: '', nextAct: 'cat', nextData: '', cat: 'x', gid: 'y' }); box.__n = n; if (box.querySelectorAll('.star.on').length !== n || box.querySelectorAll('.star').length !== 3) throw new Error('étoiles affichées ≠ étoiles gagnées (' + n + ')'); });
+      ok(/Bravo Abdou !/.test(Home.result(fakeCtx, { name: 'Abdou', stars: 1, reward: '', recre: '', nextAct: 'cat', nextData: '', cat: 'x', gid: 'y' })), 'réussite : « Bravo [Prénom] ! » ; le nombre d’étoiles affichées est exactement celui gagné (0 à 3)');
+      A3.go('profiles'); const nProf = Store.profiles().length;
+      ok(document.querySelectorAll('.prow').length === nProf && !document.querySelector('[data-act="delprof"]') && !!document.querySelector('[data-act="addprof"]'), 'page des profils : sélection et création ; la suppression n’y est pas (réservée aux parents)');
+      A3.go('parent'); const ptabs = [...document.querySelectorAll('.ptab')], seen = {};
+      ['follow', 'limits', 'content', 'settings'].forEach(id => { document.querySelector('.ptab[data-tab="' + id + '"]').click(); const k = document.querySelector('.ptab.on').dataset.tab; seen[k] = { lock: !!document.querySelector('[data-chg="lockMin"]'), add: !!document.querySelector('[data-act="addprof"]'), wipe: !!document.querySelector('[data-act="wipe"]'), soon: document.querySelectorAll('.row.soon').length, skills: !!document.querySelector('.bline') }; });
+      ok(ptabs.length === 4 && seen.limits.lock && seen.content.add && seen.settings.wipe && seen.settings.soon === 2 && seen.follow.skills && !seen.follow.wipe, 'espace parents : 4 sections (Suivi, Limites, Contenus, Paramètres) ; effacement réservé aux Paramètres ; bambara/espagnol « Bientôt »');
+      A3.go('home');
+    }
+    Store.s().lang = keep3.lang; P3.name = keep3.name; Store.save();
+
     // ============ 11. Application ============
     group('Application — écrans');
     const A = window.LumiApp;
