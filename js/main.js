@@ -29,7 +29,12 @@
     close: sv('<path d="M5 5l14 14M19 5L5 19"/>'), back: sv('<path d="M15 4 7 12l8 8"/>'),
     speaker: sv('<path d="M3 9v6h4l5 4V5L7 9z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" stroke-width="2.4"/>'),
     check: sv('<path d="M4 12.5l5 5L20 6.5" stroke-width="4"/>'), replay: sv('<path d="M5 12a7 7 0 1 0 2.2-5.1M5 4v4h4"/>'),
-    play: sv('<path d="M7 4l13 8-13 8z"/>', 1), erase: sv('<path d="M4 20h16M6 16l9-11 5 4-8 10H8z"/>'), del: sv('<path d="M21 5H9l-6 7 6 7h12zM15 9l-4 6M11 9l4 6"/>')
+    play: sv('<path d="M7 4l13 8-13 8z"/>', 1), erase: sv('<path d="M4 20h16M6 16l9-11 5 4-8 10H8z"/>'), del: sv('<path d="M21 5H9l-6 7 6 7h12zM15 9l-4 6M11 9l4 6"/>'),
+    people: sv('<circle cx="9" cy="8" r="3.6"/><circle cx="17.5" cy="9" r="3"/><path d="M2.5 20c0-4.2 3-6.2 6.5-6.2s6.5 2 6.5 6.2zM15.4 14.4c3.6-.5 6.6 1 6.6 5.6h-5.2"/>', 1),
+    person: sv('<circle cx="12" cy="8" r="4.2"/><path d="M4 21c0-5 3.6-7 8-7s8 2 8 7z"/>', 1),
+    pad: sv('<path d="M7 7h10a5 5 0 0 1 5 5v2.4a3.6 3.6 0 0 1-6.2 2.5L14.4 15H9.6l-1.4 1.9A3.6 3.6 0 0 1 2 14.4V12a5 5 0 0 1 5-5z"/><path d="M7.4 9.6v3.2M5.8 11.2H9" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><circle cx="16.4" cy="10.6" r="1.1" fill="#fff"/><circle cx="18.6" cy="12.4" r="1.1" fill="#fff"/>', 1),
+    book: sv('<path d="M2 5.5c3.2-1.6 6.4-1.4 10 1v13.5c-3.6-2.4-6.8-2.6-10-1zM22 5.5c-3.2-1.6-6.4-1.4-10 1v13.5c3.6-2.4 6.8-2.6 10-1z"/>', 1),
+    caret: sv('<path d="M5.5 9h13L12 16.5z"/>', 1)
   };
 
   // ---- état ----
@@ -38,11 +43,11 @@
   function go(screen, p) { S = { screen, p: p || {} }; render(); window.scrollTo(0, 0); }
   function render() {
     Sound.stop(); clearTimeout(nudgeT);
-    $app.className = NOTABS.includes(S.screen) ? 'noTabs' : '';
+    $app.className = (NOTABS.includes(S.screen) ? 'noTabs' : '') + (S.screen === 'home' ? ' homeApp' : '');
     $app.innerHTML = screens[S.screen]() + (NOTABS.includes(S.screen) ? '' : tabsHTML());
     if (hooks[S.screen]) hooks[S.screen]();
   }
-  const tabsHTML = () => `<nav class="tabs" aria-label="LUMI"><button class="${S.screen === 'home' ? 'on' : ''}" data-act="go" data-to="home" aria-label="${t('tab.home')}">${IC.home}</button><button class="${S.screen === 'trophies' ? 'on' : ''}" data-act="go" data-to="trophies" aria-label="${t('tab.trophies')}">${IC.trophy}</button><button data-act="go" data-to="gate" aria-label="${t('tab.parents')}">${IC.lock}</button></nav>`;
+  const tabsHTML = () => Home.nav(homeCtx(), Home.activeTab(S.screen));   // barre à 4 onglets (voir home.js)
   const say = l => Sound.speak(l);
   const showModal = h => { $modal.innerHTML = h; $modal.setAttribute('role', 'dialog'); $modal.setAttribute('aria-modal', 'true'); };
   const hideModal = () => { $modal.innerHTML = ''; };
@@ -83,15 +88,32 @@
   const limitState = () => Rules.sessionState({ playedToday: Store.playedToday(), breakMin: Store.s().breakMin, lockMin: Store.s().lockMin, sinceBreak, extra: extra() });
   function checkLock() { if (limitState().lock && S.screen !== 'lock' && S.screen !== 'gate' && S.screen !== 'parent') { hideModal(); go('lock'); return true; } return false; }
 
+  // ================= DONNÉES DE L'ACCUEIL (réelles : profil actif, étoiles, mission du jour) =================
+  const GROUPS = Games.GROUPS;
+  const groupCats = g => g.cats.map(cat);
+  const groupStars = g => groupCats(g).reduce((a, c) => a + catStars(c), 0);
+  const groupMax = g => groupCats(g).reduce((a, c) => a + c.games.length * 3, 0);
+  // Mission du jour : même profil + même date locale = même mission ; elle pointe vers un vrai jeu adapté à l'âge.
+  function missionInfo() {
+    const p = P(), m = Rules.dailyMission(CATS, p.age, Store.today(), p.id, (c, g) => { const z = p.progress['g:' + c + ':' + g]; return z ? { stars: z.stars, updated: z.updated } : null; }, I18n.raw('letters').map(l => l.l));
+    if (!m) return null;
+    const c = cat(m.cat), g = c.games.find(z => z.id === m.game), k = 'dm.' + m.cat + '.' + m.game;
+    m.text = I18n.raw(k) !== undefined ? t(k, { l: m.letter }) : m.cat === 'stories' ? t('dm.stories', { name: Games.gameName(c, g) }) : t('dm.generic', { name: Games.gameName(c, g) });
+    return m;
+  }
+  function homeCtx() {
+    const p = P(), gs = GROUPS.reduce((a, g) => a + groupStars(g), 0), mx = GROUPS.reduce((a, g) => a + groupMax(g), 0);
+    return { t, dr, IC, art: Art, profile: p, avatar: avatarOf(p.avatar), groups: GROUPS, cat, label: Games.label, gameName: Games.gameName, starRow, starsOf, groupStars, groupMax,
+      totalStars: totalStars(), pct: Math.round(gs / Math.max(1, mx) * 100), rewardsGot: p.rewards.filter(r => r.type === 'draw').length, rewardsMax: COLLECT.length, mission: missionInfo(),
+      mastered: Skills.summary(p).filter(s => s.level === 2).map(s => t('skill.' + s.id)) };
+  }
+
   // ================= ÉCRANS =================
   const screens = {
-    home() {
-      const p = P(), av = avatarOf(p.avatar);
-      return `<div class="hello"><button class="av" data-act="profiles" aria-label="${t('p.profiles')}">${Art.child(av)}</button><div class="say">${p.name ? t('helloName', { name: esc(p.name) }) : t('hello')}</div><div class="chip">${dr('star')}${totalStars()}</div></div>
-      <div class="hero"><div class="lu">${dr('lion')}</div><button class="go" data-act="auto">${IC.play}${t('play')}</button></div>
-      <div class="cats">${CATS.map(c => `<button class="cat" style="--b:var(--${c.c});--bd:var(--${c.c}D)" data-act="cat" data-id="${c.id}"><span class="lab">${Games.label(c)}</span><div class="pic">${dr(c.art)}</div><span class="st">★ ${catStars(c)}/${c.games.length * 3}</span></button>`).join('')}
-      <button class="cat wide" style="--b:var(--coral);--bd:var(--coralD)" data-act="go" data-to="recre"><span class="lab">${t('recre')}</span><div class="pic">${dr('c_recre')}</div></button></div>`;
-    },
+    home() { return Home.home(homeCtx()); },
+    games() { return Home.games(homeCtx()); },
+    progress() { return Home.progressPage(homeCtx()); },
+    grp() { return Home.group(homeCtx(), GROUPS.find(g => g.id === S.p.id) || GROUPS[0]); },
     cat() {
       const c = cat(S.p.id), age = P().age;
       return `<div class="hub" style="--b:var(--${c.c});--bd:var(--${c.c}D)"><div class="hubtop"><button class="ib" data-act="go" data-to="home" aria-label="${t('back')}">${IC.back}</button><h1>${Games.label(c)}</h1><div class="pic">${dr(c.art)}</div></div>
@@ -184,10 +206,10 @@
 
   // ================= PARTIE =================
   const cur = () => G.rounds[G.idx];
-  function startGame(cid, gid) {
+  function startGame(cid, gid, opts) {
     if (checkLock()) return;
     const cd = cat(cid), gd = cd.games.find(g => g.id === gid), prev = starsOf(cid, gid);
-    G = { cat: cid, gid, cd, gd, prev, idx: 0, err: 0, hints: 0, rounds: gd.make(prev === 1 ? 2 : 3, { age: P().age }), fresh: true };
+    G = { cat: cid, gid, cd, gd, prev, idx: 0, err: 0, hints: 0, rounds: gd.make(prev === 1 ? 2 : 3, { age: P().age, letter: opts && opts.letter }), fresh: true };
     G.free = ['color', 'free', 'xylo', 'drum', 'story'].includes(G.rounds[0].type);
     go('play');
   }
@@ -457,7 +479,7 @@
   }
   function profilesModal() {
     const ps = Store.profiles();
-    showModal(`<div class="dlg"><div class="avs big">${ps.map(x => `<button class="avb ${x.id === P().id ? 'on' : ''}" data-act="switch" data-id="${x.id}" aria-label="${esc(x.name || t('p.profiles'))}">${Art.child(avatarOf(x.avatar))}<small>${esc(x.name || '')}</small></button>`).join('')}</div>
+    showModal(`<div class="dlg"><div class="avs big">${ps.map(x => `<button class="avb ${x.id === P().id ? 'on' : ''}" data-act="switch" data-id="${x.id}" aria-label="${esc(x.name || t('p.profiles'))}">${Home.avatar({ art: Art }, avatarOf(x.avatar))}<small>${esc(x.name || '')}</small></button>`).join('')}</div>
       <div class="btns"><button style="background:var(--coral)" data-act="stay" aria-label="${t('close')}">${IC.close}</button></div></div>`);
   }
   let importText = '';
@@ -479,6 +501,8 @@
   const actions = {
     go: el => { hideModal(); if (el.dataset.to === 'gate') openGate('parent'); else go(el.dataset.to); },
     cat: el => go('cat', { id: el.dataset.id }),
+    grp: el => go('grp', { id: el.dataset.id }),
+    dmission() { if (checkLock()) return; const mi = missionInfo(); if (mi) startGame(mi.cat, mi.game, { letter: mi.letter }); },
     game: el => { hideModal(); startGame(el.dataset.c, el.dataset.g); },
     auto() { const tgt = Rules.nextGame(CATS, P().age, starsOf); startGame(tgt[0], tgt[1]); },   // le filtre d'âge reste actif même quand tout est terminé
     say() { const r = cur(); if (!r) return; if (r.type === 'story') say(storyLine(r.story, G.pg || 0)); else { say(r.ask); if (r.type === 'melody') playMelody(); armNudge(); } },

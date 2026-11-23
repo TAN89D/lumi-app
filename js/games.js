@@ -7,6 +7,8 @@ window.Games = (function () {
   const AKEY = { lion: 'lion', elephant: 'elephant', girafe: 'giraffe', zebre: 'zebra', singe: 'monkey', crocodile: 'crocodile', hippo: 'hippo', tortue: 'tortoise', perroquet: 'parrot', flamant: 'flamingo', poisson: 'fish', serpent: 'snake' };
   const COLS = ['#e5483c', '#2f7de1', '#f2c200', '#3fae49', '#8a55c9', '#f28c1b'];
   const letters = () => I18n.raw('letters');
+  // Lettres mélangées ; si la mission du jour impose une lettre (ctx.letter), elle passe en premier.
+  const lettersFor = ctx => { const all = shuffle(letters()), x = ctx && ctx.letter && all.find(y => y.l === ctx.letter); return x ? [x].concat(all.filter(y => y !== x)) : all; };
   const others = (all, ok, n) => shuffle(all.filter(x => x !== ok)).slice(0, n - 1).concat([ok]);
   const mangoes = k => Array.from({ length: k }, () => `<span class="it">${dr('mango')}</span>`).join('');
   const mg = n => I18n.mg(n);
@@ -14,7 +16,7 @@ window.Games = (function () {
   const between = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 
   // ---- manches « choisir » ----
-  const letterListen = (n, ctx) => shuffle(letters()).slice(0, 4).map(x => ({
+  const letterListen = (n, ctx) => lettersFor(ctx).slice(0, 4).map(x => ({
     type: 'choose', ask: line('ask.letter.listen', { l: x.l }), show: `<div class="bigl">${x.l}</div>`,
     choices: shuffle([x].concat(shuffle(letters().filter(y => y.l !== x.l)).slice(0, n - 1))).map(y => ({ h: dr(y.key), ok: y.l === x.l, say: line('say.letter', { l: y.l, word: y.word }) }))
   }));
@@ -68,7 +70,7 @@ window.Games = (function () {
   }));
 
   // ---- manches « glisser » ----
-  const letterDrag = () => shuffle(letters()).slice(0, 3).map(x => ({
+  const letterDrag = (n, ctx) => lettersFor(ctx).slice(0, 3).map(x => ({
     type: 'drag', ask: line('ask.letter.drag', { l: x.l }), items: [{ id: x.l, h: `<span>${x.l}</span>`, to: x.l }],
     slots: shuffle([x].concat(shuffle(letters().filter(y => y.l !== x.l)).slice(0, 2))).map(y => ({ key: y.l, h: dr(y.key) }))
   }));
@@ -105,7 +107,7 @@ window.Games = (function () {
   const swap = () => shuffle(['elephant', 'giraffe', 'lion', 'fish', 'zebra']).slice(0, 2).map(k => ({ type: 'swap', key: k, ask: line('ask.puzzle') }));
   const memory = (kind, np) => (n, ctx) => [{ type: 'memory', kind, ask: line('ask.memory'),
     pairs: kind === 'flag' ? shuffle(Object.keys(V.countries)).slice(0, Math.min(np, cap(ctx).pairs)) : shuffle(Object.keys(AKEY).map(k => AKEY[k])).slice(0, Math.min(np, cap(ctx).pairs)) }];
-  const traceL = (n, ctx) => shuffle(letters()).slice(0, cap(ctx).traces).map(x => ({ type: 'trace', glyph: x.l, ask: line('ask.letter.trace', { l: x.l }) }));
+  const traceL = (n, ctx) => lettersFor(ctx).slice(0, cap(ctx).traces).map(x => ({ type: 'trace', glyph: x.l, ask: line('ask.letter.trace', { l: x.l }) }));
   const traceN = (n, ctx) => shuffle(['1', '2', '3', '4', '5', '6', '7', '8', '9']).slice(0, cap(ctx).traces).map(g => ({ type: 'trace', glyph: g, ask: line('ask.num.trace', { l: g }) }));
   const tpl = id => () => [{ type: 'color', tpl: id, ask: line('ask.paint') }];
 
@@ -132,5 +134,11 @@ window.Games = (function () {
     return Object.assign({}, s, { code: 'fr', speech: 'fr-FR' });
   }
   const label = c => t('cat.' + c.id), gameName = (c, g) => (c.id === 'stories' ? localStory(L.stories.find(s => s.id === g.id)).title : t('g.' + c.id + '.' + g.id));
-  return { CATS, AKEY, shuffle, pick, COLS, label, gameName, localStory };
+  // Les 8 « mondes » de l'accueil : chacun regroupe une ou deux catégories réelles (aucun écran fictif).
+  const GROUPS = [
+    { id: 'letters', cats: ['letters'], art: 'c_letters' }, { id: 'numbers', cats: ['numbers'], art: 'c_numbers' },
+    { id: 'shapes', cats: ['shapes', 'logic'], art: 'c_shapes' }, { id: 'colors', cats: ['colors', 'art'], art: 'c_colors' },
+    { id: 'music', cats: ['music'], art: 'c_music' }, { id: 'nature', cats: ['nature'], art: 'c_nature' },
+    { id: 'countries', cats: ['countries'], art: 'c_countries' }, { id: 'stories', cats: ['stories'], art: 'c_stories' }];
+  return { CATS, GROUPS, AKEY, shuffle, pick, COLS, label, gameName, localStory };
 })();
