@@ -1,6 +1,9 @@
 // Tests de bout en bout : la page de tests unitaires, le hors ligne, et des parcours en émulation Android / iPhone / tablette.
 const { test, expect } = require('@playwright/test');
 
+// L'application s'ouvre sur l'écran de bienvenue ; « Commencer » mène à l'accueil.
+const openHome = async page => { await page.goto('/index.html'); await page.locator('[data-act="begin"]').click(); };
+
 test.describe('Tests automatiques de LUMI (page tests/index.html)', () => {
   test('tous les tests intégrés réussissent', async ({ page }) => {
     const errors = []; page.on('pageerror', e => errors.push(e.message));
@@ -19,14 +22,14 @@ test.describe('Tests automatiques de LUMI (page tests/index.html)', () => {
 
 test.describe('Parcours (émulation de l’appareil du projet)', () => {
   test('l’accueil s’affiche sans débordement horizontal', async ({ page }) => {
-    await page.goto('/index.html');
+    await openHome(page);
     await expect(page.locator('.h-cats .gcat')).toHaveCount(8);
     const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(over).toBeLessThanOrEqual(1);
     await expect(page.locator('.ribbon')).toContainText('PRÉVISUALISATION');   // jamais confondu avec la production
   });
   test('un jeu s’ouvre, se joue et donne des étoiles', async ({ page }) => {
-    await page.goto('/index.html');
+    await openHome(page);
     await page.locator('.h-cats .gcat').first().click();
     await page.locator('.gcard').first().click();
     await expect(page.locator('.play')).toBeVisible();
@@ -40,7 +43,7 @@ test.describe('Parcours (émulation de l’appareil du projet)', () => {
     await expect(page.locator('.big-stars .star.on').first()).toBeVisible();
   });
   test('la porte parentale demande un maintien puis un calcul', async ({ page }) => {
-    await page.goto('/index.html');
+    await openHome(page);
     await page.locator('.h-parents').click();
     await expect(page.locator('#hold')).toBeVisible();
     const box = await page.locator('#hold').boundingBox();
@@ -64,7 +67,7 @@ test.describe('Parcours (émulation de l’appareil du projet)', () => {
 
 test.describe('Nouvel accueil (V3.2)', () => {
   test('mission du jour, Commencer et navigation par onglets', async ({ page }) => {
-    await page.goto('/index.html');
+    await openHome(page);
     await expect(page.locator('.h-mission')).toBeVisible();
     await page.locator('.nav4 button').nth(1).click(); await expect(page.locator('.gcat').first()).toBeVisible();
     await page.locator('.nav4 button').nth(3).click(); await expect(page.locator('.pg-row').first()).toBeVisible();
@@ -73,7 +76,9 @@ test.describe('Nouvel accueil (V3.2)', () => {
     await page.locator('.h-mission').click(); await expect(page.locator('.play')).toBeVisible();
   });
   test('captures d’écran du nouvel accueil (jointes au rapport)', async ({ page }, info) => {
-    await page.goto('/index.html'); await page.waitForTimeout(800);
+    await page.goto('/index.html'); await page.waitForTimeout(1200);
+    await info.attach('1-bienvenue', { body: await page.screenshot(), contentType: 'image/png' });
+    await page.locator('[data-act="begin"]').click(); await page.waitForTimeout(900);
     await info.attach('accueil-haut', { body: await page.screenshot(), contentType: 'image/png' });
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(300);
     await info.attach('accueil-bas', { body: await page.screenshot(), contentType: 'image/png' });
@@ -83,6 +88,21 @@ test.describe('Nouvel accueil (V3.2)', () => {
     await info.attach('monde', { body: await page.screenshot(), contentType: 'image/png' });
     await page.locator('.gcard').first().click(); await page.waitForTimeout(600);
     await info.attach('jeu', { body: await page.screenshot(), contentType: 'image/png' });
+    await page.evaluate(() => window.LumiApp.go('profiles')); await page.waitForTimeout(300);
+    await info.attach('profils', { body: await page.screenshot(), contentType: 'image/png' });
+    await page.evaluate(() => window.LumiApp.go('parent')); await page.waitForTimeout(300);
+    await info.attach('parents-suivi', { body: await page.screenshot(), contentType: 'image/png' });
+    await page.locator('.ptab[data-tab="settings"]').click(); await page.waitForTimeout(300);
+    await info.attach('parents-parametres', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+  test('la bienvenue apparaît une fois ; « Commencer » ouvre l’accueil ; les onglets n’y ramènent pas', async ({ page }) => {
+    await page.goto('/index.html');
+    await expect(page.locator('.welcome')).toBeVisible();
+    await expect(page.locator('.nav4')).toHaveCount(0);
+    await page.locator('[data-act="begin"]').click();
+    await expect(page.locator('.h-cats .gcat')).toHaveCount(8);
+    await page.locator('.nav4 button').nth(1).click(); await page.locator('.nav4 button').nth(0).click();
+    await expect(page.locator('.welcome')).toHaveCount(0);
   });
 });
 
@@ -95,6 +115,8 @@ test.describe('Hors ligne', () => {
     await page.reload(); await page.waitForTimeout(500);   // la page est maintenant contrôlée par le service worker
     await context.setOffline(true);
     await page.reload();
+    await expect(page.locator('.w-chars')).toBeVisible();
+    await page.locator('[data-act="begin"]').click();
     await expect(page.locator('.h-cats .gcat')).toHaveCount(8);
     await expect(page.locator('.h-chars')).toBeVisible();
     await page.locator('.h-cats .gcat').first().click(); await page.locator('.gcard').first().click();

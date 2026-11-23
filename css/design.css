@@ -134,3 +134,93 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:34vh;backgr
 @media (max-height:520px) and (orientation:landscape){.h-start{min-height:64px}}
 body.contrast .h-welcome,body.contrast .h-mission,body.contrast .gcat{border-color:#000}
 @media (prefers-reduced-motion:no-preference){.h-start{animation:pulse3 3s ease-in-out infinite}@keyframes pulse3{50%{transform:scale(1.015)}}}
+
+/* =====================================================================
+   V3.3 — refonte premium : bienvenue, activité, réussite, histoires, parents, profils, animations
+   ===================================================================== */
+@keyframes lumi-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes lumi-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes lumi-rise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes lumi-wave{0%,100%{transform:rotate(0)}25%{transform:rotate(-1.4deg)}75%{transform:rotate(1.4deg)}}
+
+/* ---------- écran 1 : bienvenue ---------- */
+#app.welcomeApp{padding:0 0 calc(24px + env(safe-area-inset-bottom));max-width:760px;min-height:100vh;background:linear-gradient(#3fa9f2 0%,#79cbf8 38%,#b5e3fb 60%,transparent 100%)}
+.welcome{display:flex;flex-direction:column;align-items:stretch;padding-top:calc(14px + env(safe-area-inset-top))}
+.w-logo{text-align:center;padding:0 10px;position:relative;z-index:2}
+.w-logo .logo{font-size:clamp(4.4rem,26vw,7.4rem)}
+.w-chars{display:block;width:100%;height:auto;margin-top:-10px;position:relative;z-index:1;animation:lumi-bob 4.5s ease-in-out infinite;transform-origin:50% 90%;-webkit-mask-image:linear-gradient(to bottom,transparent 0,transparent 8%,#000 24%);mask-image:linear-gradient(to bottom,transparent 0,transparent 8%,#000 24%)}
+.w-msg{position:relative;z-index:3;margin:-30px 18px 0;text-align:center;background:linear-gradient(#fffaf0,#ffeec8);border:3px solid #fff;border-radius:44px;padding:12px 18px 14px;box-shadow:0 7px 0 #d9b266,0 14px 22px rgba(0,0,0,.2);animation:lumi-rise .6s .15s both}
+.w-msg b{display:block;font-size:clamp(1.8rem,9vw,2.6rem);color:var(--ink2);line-height:1.1}
+.w-msg span{display:block;font-size:clamp(1rem,4.6vw,1.3rem);color:#6b3a86;font-weight:800;margin-top:4px}
+.w-parents{align-self:center;margin-top:16px;display:inline-flex;align-items:center;gap:8px;min-height:52px;padding:8px 22px;border-radius:30px;background:rgba(255,250,240,.92);border:3px solid #fff;color:#6b3a10;font-weight:900;font-size:1.05rem;box-shadow:0 4px 0 #d9b266}
+.w-parents .ic svg{width:26px;height:26px;color:#a9701a}
+
+/* ---------- écran 3 : activité avec personnage-guide ---------- */
+.guide{position:relative;margin:2px auto 6px;max-width:420px;min-height:200px}
+/* l'image contient une ancienne bulle : on la découpe (clip-path) pour ne garder que le personnage ; la vraie bulle (texte réel, traduit) est en HTML */
+.guide img{display:block;width:66%;height:auto;margin-left:0;clip-path:polygon(0 0,40% 0,40% 33%,50% 37%,100% 45%,100% 100%,0 100%);-webkit-mask-image:radial-gradient(ellipse 62% 70% at 38% 66%,#000 58%,transparent 100%);mask-image:radial-gradient(ellipse 62% 70% at 38% 66%,#000 58%,transparent 100%)}
+.guide .bubble{position:absolute;right:0;top:0;width:56%;display:flex;align-items:center;gap:8px;text-align:left;background:#fff;color:var(--ink2);font-weight:900;font-size:clamp(1rem,4.6vw,1.3rem);line-height:1.15;padding:12px 14px;border-radius:26px;border:3px solid #e3c7ff;box-shadow:0 5px 0 #cdb0f0,0 10px 14px rgba(0,0,0,.18);min-height:92px;z-index:2}
+.guide .bubble::before{content:"";position:absolute;left:-14px;bottom:18px;width:22px;height:22px;background:#fff;border-left:3px solid #e3c7ff;border-bottom:3px solid #e3c7ff;transform:rotate(45deg) skew(10deg,10deg)}
+.guide .bubble .spk{flex:none;width:38px;height:38px;border-radius:50%;background:linear-gradient(#b774f0,var(--violet2));display:flex;align-items:center;justify-content:center}
+.guide .bubble .spk svg{width:22px;height:22px;color:#fff}
+.guide .bubble.pulse{animation:lumi-bob .7s ease-in-out 3}
+.tile{transition:transform .12s}
+.tile:active{transform:translateY(4px) scale(.98)}
+
+/* ---------- écran 4 : réussite ---------- */
+.result3{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 14px 24px;gap:10px;background:linear-gradient(#e9ccff 0%,#f6dcff 50%,#ffe9a8 100%);border-radius:36px;border:4px solid #fff;box-shadow:0 10px 22px rgba(60,20,100,.25)}
+.result3 h1{margin:0;color:#fff;font-size:clamp(2rem,10vw,3rem);line-height:1.05;background:linear-gradient(#a45ae8,var(--violet2));padding:8px 22px;border-radius:26px;border:3px solid #e3c7ff;box-shadow:0 6px 0 var(--violetD2);text-shadow:0 3px 0 rgba(0,0,0,.25)}
+.result3 .sub{margin:0;color:var(--ink2);font-weight:900;font-size:1.25rem}
+.lion3{width:min(78%,320px);height:auto;border-radius:30px;animation:lumi-wave 3s ease-in-out infinite;-webkit-mask-image:radial-gradient(ellipse at 50% 46%,#000 62%,transparent 100%);mask-image:radial-gradient(ellipse at 50% 46%,#000 62%,transparent 100%)}
+.result3 .big-stars{display:flex;gap:6px;font-size:clamp(3.4rem,17vw,5.4rem);line-height:1}
+.result3 .big-stars .star{color:#d9c9ef;text-shadow:0 4px 0 rgba(0,0,0,.12)}
+.result3 .big-stars .star.on{color:#ffc533;text-shadow:0 5px 0 #c98a0a;animation:lumi-pop .6s both}
+.result3 .newc{display:flex;align-items:center;gap:10px;background:#fff;border-radius:24px;padding:8px 16px;font-weight:900;box-shadow:0 5px 0 #d9b266}
+.result3 .newc .pic{width:56px;height:56px}
+.h-start.cont{margin:6px 0 0;width:100%;max-width:420px;background:linear-gradient(#a45ae8,var(--violet2));border-color:#e3c7ff;box-shadow:inset 0 5px 0 rgba(255,255,255,.3),0 9px 0 var(--violetD2),0 16px 22px rgba(0,0,0,.28);font-size:clamp(1.5rem,7vw,2rem);min-height:72px}
+.result3 .row3{display:flex;gap:16px;margin-top:6px}
+
+/* ---------- écran 5 : livre illustré ---------- */
+.book{display:flex;flex-direction:column;gap:10px;padding:0 0 12px}
+.book .bk-title{text-align:center;background:rgba(255,246,223,.95);border:3px solid #fff;border-radius:26px;padding:8px 14px;box-shadow:0 5px 0 #d9b266}
+.book .bk-title b{display:block;font-size:clamp(1.3rem,6vw,1.8rem);color:var(--ink2);line-height:1.15}
+.book .bk-title small{color:#8a6a3a;font-weight:900}
+.book .stext{background:#fff6df;border:3px solid #fff;border-radius:24px;padding:14px 16px;font-size:clamp(1.1rem,4.8vw,1.35rem);line-height:1.45;color:#3a2a1c;box-shadow:0 5px 0 #d9b266}
+.book svg,.book .emj{border-radius:26px;border:4px solid #fff;box-shadow:0 8px 16px rgba(0,0,0,.2);animation:lumi-rise .45s both}
+
+/* ---------- écran 6 : espace parents à onglets ---------- */
+.ptabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 12px;background:rgba(255,255,255,.8);border:3px solid #fff;border-radius:26px;padding:5px;box-shadow:0 5px 0 rgba(0,0,0,.12)}
+.ptab{min-height:52px;border-radius:20px;background:transparent;color:var(--violet2);font-weight:900;font-size:clamp(.78rem,3.4vw,1rem);padding:4px 2px}
+.ptab.on{background:linear-gradient(#b774f0,var(--violet2));color:#fff;box-shadow:0 4px 0 var(--violetD2)}
+.row.soon{opacity:.6}
+.row.soon em{font-style:normal;font-weight:900;background:#ffe27a;color:#5a1a5e;border-radius:14px;padding:2px 12px}
+
+/* ---------- écran 7 : profils ---------- */
+.pg-prof{display:flex;align-items:center;gap:12px;margin:calc(8px + env(safe-area-inset-top)) 0 10px}
+.ib3{width:56px;height:56px;border-radius:50%;background:linear-gradient(#b774f0,var(--violet2));color:#fff;border:3px solid #e3c7ff;box-shadow:0 5px 0 var(--violetD2);display:flex;align-items:center;justify-content:center}
+.ib3 svg{width:28px;height:28px}
+.plist{background:rgba(255,246,223,.96);border:3px solid #fff;border-radius:30px;padding:6px;box-shadow:0 7px 0 #d9b266,0 14px 20px rgba(0,0,0,.14);margin-bottom:14px}
+.prow{display:flex;align-items:center;gap:12px;width:100%;min-height:76px;padding:8px 12px;border-radius:24px;background:transparent;text-align:left;color:var(--ink2)}
+.prow+.prow{border-top:2px solid #ead9b0}
+.prow.on{background:#f1ffe0}
+.prow .av{width:60px;height:60px;border-radius:50%;overflow:hidden;border:3px solid #ff8fb3;background:#fff;flex:none}
+.prow .av img,.prow .av svg{width:100%;height:100%;object-fit:cover;display:block}
+.prow .pn{flex:1}.prow .pn b{display:block;font-size:1.3rem}.prow .pn small{font-weight:800;color:#8a6a3a}
+.prow .pc{width:38px;height:38px;border-radius:50%;border:3px solid #cfc3a0;display:flex;align-items:center;justify-content:center;background:#fff}
+.prow.on .pc{background:#3fb52a;border-color:#2a8a1a;color:#fff}.prow .pc svg{width:22px;height:22px}
+.h-btn.wide{width:100%}
+.pinfo{display:flex;align-items:center;gap:10px;margin:14px 0;background:#fff;border-radius:24px;padding:10px 14px;font-weight:800;font-size:.95rem;box-shadow:0 4px 0 #d9b266}
+.pinfo .ic{flex:none;width:30px;height:30px;border-radius:50%;background:#4b8fe8;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center}
+
+/* ---------- animation d'entrée des cartes ---------- */
+.gcat{animation:lumi-rise .45s both}
+.gcat:nth-child(2){animation-delay:.04s}.gcat:nth-child(3){animation-delay:.08s}.gcat:nth-child(4){animation-delay:.12s}
+.gcat:nth-child(5){animation-delay:.16s}.gcat:nth-child(6){animation-delay:.2s}.gcat:nth-child(7){animation-delay:.24s}.gcat:nth-child(8){animation-delay:.28s}
+.h-chars{animation:lumi-bob 5s ease-in-out infinite;transform-origin:50% 90%}
+button:active{transition:transform .08s}
+
+/* animations réduites ou mode calme : tout est immobile (le contenu reste identique) */
+@media (prefers-reduced-motion:reduce){.w-chars,.h-chars,.lion3,.gcat,.w-msg,.book svg,.book .emj,.result3 .big-stars .star.on,.guide .bubble.pulse{animation:none!important}}
+body.calm .w-chars,body.calm .h-chars,body.calm .lion3,body.calm .gcat,body.calm .w-msg,body.calm .book svg,body.calm .book .emj,body.calm .result3 .big-stars .star.on,body.calm .guide .bubble.pulse{animation:none!important}
+body.contrast .w-msg,body.contrast .result3,body.contrast .plist,body.contrast .ptabs{border-color:#000}
+@media (min-width:700px){.guide{max-width:520px}.result3{max-width:560px;margin:0 auto}}
