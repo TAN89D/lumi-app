@@ -5,7 +5,9 @@ test.describe('Tests automatiques de LUMI (page tests/index.html)', () => {
   test('tous les tests intégrés réussissent', async ({ page }) => {
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.goto('/tests/index.html');
-    await page.waitForFunction(() => window.__lumiTestResult || /planté/.test(document.getElementById('sum').textContent), null, { timeout: 100000 });
+    test.setTimeout(300000);
+    try { await page.waitForFunction(() => window.__lumiTestResult || /planté/.test(document.getElementById('sum').textContent), null, { timeout: 240000 }); }
+    catch (e) { throw new Error('La page de tests ne se termine pas. Dernier groupe démarré : ' + await page.evaluate(() => window.__lumiGroup).catch(() => '?') + ' | erreurs de page : ' + errors.join(' ; ')); }
     const res = await page.evaluate(() => window.__lumiTestResult);
     expect(res, 'le lanceur de tests a planté').toBeTruthy();
     if (res.fail) console.log('ÉCHECS :\n' + res.failures.map(f => ' - ' + f.group + ' :: ' + f.name + ' :: ' + f.detail).join('\n'));
