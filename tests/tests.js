@@ -378,7 +378,7 @@
     ok(document.querySelector('.h-start') && /Commencer/.test(document.querySelector('.h-start').textContent) && document.querySelector('.h-parents') && document.querySelector('.h-mission'), 'boutons Commencer, Parents et mission présents');
     P2.progress = { 'g:letters:listen': { stars: 3, plays: 1, errors: 0, hints: 0, last: 3, updated: '2026-01-01' }, 'g:numbers:count': { stars: 2, plays: 1, errors: 0, hints: 0, last: 2, updated: '2026-01-01' } }; A2.go('home');
     ok(/5 étoiles/.test(document.querySelector('.h-prog .chip2').textContent), 'étoiles affichées = étoiles réellement gagnées (3 + 2)');
-    ok(document.querySelector('.g-letters .gs').textContent.indexOf('★ 3/9') >= 0 && document.querySelector('.g-numbers .gs').textContent.indexOf('★ 2/12') >= 0, 'étoiles par monde calculées depuis la progression');
+    ok(document.querySelector('.g-letters .gs').textContent.indexOf('★ 3/9') >= 0 && document.querySelector('.g-numbers .gs').textContent.indexOf('★ 2/15') >= 0, 'étoiles par monde calculées depuis la progression');
     P2.progress = {}; A2.go('home'); ok(/0 étoiles/.test(document.querySelector('.h-prog .chip2').textContent) && /0 \/ \d+ trophées/.test(document.querySelector('.h-prog').textContent), 'profil vierge : 0 étoile, 0 trophée (aucune donnée fictive)');
     let opened = 0, listed = 0;
     for (const g of Games.GROUPS) { A2.go('home'); document.querySelector('.gcat[data-id="' + g.id + '"]').click(); if (A2.screen === 'grp') { opened++; listed += document.querySelectorAll('.hub .gcard').length; } }
@@ -436,6 +436,76 @@
       A3.go('home');
     }
     Store.s().lang = keep3.lang; P3.name = keep3.name; Store.save();
+
+    // ============ 10d. V3.4 : mascotte animée + questions de compréhension ============
+    group('V3.4 — mascotte Lumi (vectorielle, animable, repli statique)');
+    const holder = document.createElement('div'); document.body.appendChild(holder);
+    const mc = Mascot.mount(holder, { state: 'rest' }), parts = ['l-body', 'l-head', 'l-ear-l', 'l-ear-r', 'l-lid', 'l-arm-l', 'l-arm-r', 'm-rest', 'm-talk', 'm-happy', 'm-oops'];
+    ok(Mascot.STATES.join() === 'rest,wave,talk,happy,oops,cheer' && parts.every(c => holder.querySelector('.' + c)) && !holder.querySelector('image,img'), 'Lumi est un vrai personnage vectoriel : corps, tête, oreilles, paupières, deux pattes, quatre bouches (aucune photo)');
+    ok(Mascot.STATES.every(s => { mc.set(s); return mc.state === s; }) && (mc.set('inconnu'), mc.state === 'rest'), 'les six états (repos, salut, parole, bonne réponse, erreur, fête) sont réglables ; un état inconnu retombe au repos');
+    mc.set('happy', 60); await wait(160); ok(mc.state === 'rest', 'une pose temporaire (bonne réponse) revient d’elle-même au repos');
+    mc.setSpeaking(true); const talkSt = mc.state, talkAttr = mc.el.getAttribute('data-speaking'); mc.setSpeaking(false); ok(talkSt === 'talk' && talkAttr === '1' && mc.state === 'rest', 'la bouche suit l’état de narration (parle / se tait)');
+    mc.set('cheer'); mc.setSpeaking(true); ok(mc.state === 'cheer', 'une narration ne casse pas la pose de fête'); mc.setSpeaking(false);
+    const oMM = window.matchMedia, keepCalm = document.body.classList.contains('calm');
+    document.body.classList.remove('calm'); window.matchMedia = () => ({ matches: false }); const animOn = Mascot.isAnimated();
+    window.matchMedia = () => ({ matches: true }); const animReduced = Mascot.isAnimated(); window.matchMedia = () => ({ matches: false });
+    document.body.classList.add('calm'); const animCalm = Mascot.isAnimated(); document.body.classList.toggle('calm', keepCalm); window.matchMedia = oMM;
+    ok(animOn === true && animReduced === false && animCalm === false, 'animations coupées si « réduire les animations » ou mode calme (statique de secours)');
+    const cssV34 = await (await fetch('../css/design.css', { cache: 'no-store' })).text();
+    ok(/prefers-reduced-motion:reduce\)\{\.lumi,\.lumi \*\{animation:none!important/.test(cssV34) && /body\.calm \.lumi,body\.calm \.lumi \*\{animation:none!important/.test(cssV34) && /\.lumi\[data-state=cheer\] \.l-arm-r\{transform:rotate/.test(cssV34), 'la feuille de style fige Lumi (mêmes poses, aucune boucle) en animations réduites et en mode calme');
+    const n0 = Mascot.count(); mc.destroy(); ok(Mascot.count() === n0 - 1, 'une mascotte détruite se désinscrit (pas de fuite)'); holder.remove();
+
+    group('V3.4 — questions des dix histoires (français et anglais)');
+    const LS = LUMI.stories, norm2 = s => s.toLowerCase().replace(/[’']/g, '’'), hasWord = (text, kw) => new RegExp('(^|[^a-zà-ÿ])' + norm2(kw).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-zà-ÿ]|$)', 'i').test(norm2(text));
+    ok(LS.length === 10 && StoryQuiz.ids().length === 10 && LS.every(s => StoryQuiz.has(s.id)), 'les dix histoires ont chacune une question');
+    const textOf = (s, lg) => lg === 'en' ? LUMI.storiesByLang.en[s.id].pages.join(' ') : s.pages.map(p => p.text).join(' ');
+    const bad34 = [];
+    LS.forEach(s => ['fr', 'en'].forEach(lg => {
+      const r = StoryQuiz.raw(s.id, lg), txt = textOf(s, lg);
+      if (!r || !r.q || /\{|undefined|NaN/.test(r.q)) { bad34.push(s.id + '/' + lg + ' question vide'); return; }
+      if (!hasWord(txt, r.kwOk)) bad34.push(s.id + '/' + lg + ' : la bonne réponse « ' + r.kwOk + ' » n’est pas dans le texte');
+      r.kwKo.forEach(k => { if (hasWord(txt, k)) bad34.push(s.id + '/' + lg + ' : le distracteur « ' + k + ' » apparaît dans le texte'); });
+      if (r.ko.length < 2) bad34.push(s.id + '/' + lg + ' : pas assez de distracteurs');
+    }));
+    ok(bad34.length === 0, 'chaque bonne réponse est prouvée par le texte du conte, aucun distracteur n’y figure (fr + en)', bad34.join(' | '));
+    ok(LS.every(s => !/[éèêàùç]/.test(StoryQuiz.raw(s.id, 'en').q + [StoryQuiz.raw(s.id, 'en').ok.en].concat(StoryQuiz.raw(s.id, 'en').ko.map(k => k.en)).join(' '))), 'les questions et réponses anglaises ne contiennent aucun accent français');
+    const cnt34 = [];
+    LS.forEach(s => ['fr', 'en'].forEach(lg => [3, 4, 5].forEach(age => { const q = StoryQuiz.build(s.id, lg, age); cnt34.push(q.choices.length === (age === 3 ? 2 : 3) && q.choices.filter(c => c.ok).length === 1 && q.choices.every(c => c.label && c.e) && StoryQuiz.check(q, q.choices.findIndex(c => c.ok)) && q.choices.every((c, i) => c.ok || !StoryQuiz.check(q, i))); })));
+    ok(cnt34.length === 60 && cnt34.every(Boolean), 'une seule bonne réponse par question ; 2 choix à 3 ans, 3 choix à 4 et 5 ans ; la validation n’accepte que la bonne réponse');
+    const pos = [0, 0, 0]; for (let i = 0; i < 90; i++) { const q = StoryQuiz.build('mangue', 'fr', 5); pos[q.choices.findIndex(c => c.ok)]++; }
+    ok(pos.every(n => n > 8), 'la bonne réponse change de place (' + pos.join(' / ') + ' sur 90 tirages)');
+    ok(StoryQuiz.build('inconnue', 'fr', 4) === null && StoryQuiz.check(null, 0) === false, 'histoire sans question : pas de question (l’histoire se termine normalement)');
+
+    group('V3.4 — déroulement dans l’application (passer, réessayer, audio, progression)');
+    const A4 = window.LumiApp, P4 = Store.profile();
+    if (A4) {
+      const snap4 = JSON.stringify({ progress: P4.progress, rewards: P4.rewards, storiesRead: P4.storiesRead, skills: P4.skills, recre: P4.recre, age: P4.age, playTime: P4.playTime }), settings4 = JSON.stringify(Store.s());
+      const toQuiz = (id, age) => { P4.age = age; A4.go('home'); A4.startGame('stories', id); for (let i = 0; i < 12 && !document.querySelector('.quiz'); i++) document.querySelector('[data-act="spg"][data-d="1"]').click(); return !!document.querySelector('.quiz'); };
+      const oStop = Sound.stop; let stops = 0; Sound.stop = () => { stops++; return oStop(); };
+      ok(toQuiz('tortue', 5) && document.querySelectorAll('.q-ch').length === 3 && !!document.querySelector('.q-skip') && /tortue/.test(document.querySelector('.q-bubble').textContent) && document.querySelectorAll('.mascot-slot svg.lumi').length >= 1, 'à la fin de l’histoire : question illustrée, 3 réponses à 5 ans, bouton « Passer », Lumi présent');
+      ok(toQuiz('tortue', 3) && document.querySelectorAll('.q-ch').length === 2, 'à 3 ans : seulement 2 réponses');
+      const before = stops; A4.go('home'); ok(stops > before, 'quitter l’écran arrête la voix (Sound.stop appelé à chaque changement d’écran)');
+      toQuiz('mangue', 4); const errBefore = A4.game.err, wrongIdx = [...document.querySelectorAll('.q-ch')].findIndex((b, i) => !A4.game.quiz.choices[i].ok);
+      document.querySelectorAll('.q-ch')[wrongIdx].click();
+      ok(A4.screen === 'play' && !!document.querySelector('.quiz') && A4.game.err === errBefore && document.querySelectorAll('.q-ch.bad').length === 1, 'mauvaise réponse : douce, sans pénalité (aucune erreur comptée), on reste sur la question pour réessayer');
+      document.querySelectorAll('.q-ch')[wrongIdx].click(); ok(document.querySelectorAll('.q-ch.bad').length === 1, 'une réponse déjà essayée ne se compte pas deux fois');
+      const okIdx = A4.game.quiz.choices.findIndex(c => c.ok); document.querySelectorAll('.q-ch')[okIdx].click(); await wait(2200);
+      ok(A4.screen === 'result' && A4.game.stars === 3 && P4.storiesRead.includes('mangue'), 'bonne réponse : encouragement puis fin de l’histoire (3 étoiles, histoire marquée lue)');
+      toQuiz('baobab', 4); document.querySelector('.q-skip').click(); ok(A4.screen === 'result' && A4.game.stars === 3 && P4.storiesRead.includes('baobab'), 'l’enfant peut terminer l’histoire sans répondre (« Passer »)');
+      const progressMid = JSON.stringify(P4.progress);
+      toQuiz('pluie', 4); const keyBefore = Object.keys(P4.progress).length; document.querySelectorAll('.q-ch')[A4.game.quiz.choices.findIndex(c => !c.ok)].click(); ok(Object.keys(P4.progress).length === keyBefore && JSON.stringify(P4.progress) === progressMid, 'aucune progression perdue ni ajoutée tant que l’enfant n’a pas fini');
+      ok(JSON.stringify(Store.s()) === settings4, 'les réglages parentaux (limites, voix, accessibilité) sont intacts après les histoires');
+      // arrêt de la narration programmée : une phrase en attente de voix n'est jamais dite après un changement d'écran
+      const sx = Store.s(), keepV = Object.assign({}, sx), cap4 = [], oSp = speechSynthesis.speak, oGv = speechSynthesis.getVoices, oUt = window.SpeechSynthesisUtterance;
+      window.SpeechSynthesisUtterance = function (t) { this.text = t; }; speechSynthesis.speak = u => cap4.push(u); speechSynthesis.getVoices = () => []; sx.voice = true; sx.rec = false; Sound.refresh();
+      Sound.speak({ id: 'fr:quiz.x.q', text: 'Une question', lang: 'fr-FR' }); Sound.stop(); speechSynthesis.getVoices = () => [{ name: 'Voix FR', lang: 'fr-FR', localService: true }]; Sound.refresh(); await wait(700);
+      ok(cap4.filter(u => u.text === 'Une question').length === 0, 'une narration en attente est annulée à l’arrêt : jamais de voix tardive par-dessus la page suivante');
+      Object.assign(sx, keepV); speechSynthesis.speak = oSp; speechSynthesis.getVoices = oGv; window.SpeechSynthesisUtterance = oUt; Sound.refresh();
+      Sound.stop = oStop;
+      const swT = await (await fetch('../sw.js', { cache: 'no-store' })).text();
+      ok(swT.indexOf("'js/mascot.js'") >= 0 && swT.indexOf("'js/story-quiz.js'") >= 0 && /const VERSION = '3-4-/.test(swT), 'mascotte et questions sont dans le cache hors ligne (version 3-4-x)');
+      const old = JSON.parse(snap4); P4.progress = old.progress; P4.rewards = old.rewards; P4.storiesRead = old.storiesRead; P4.skills = old.skills; P4.recre = old.recre; P4.age = old.age; P4.playTime = old.playTime; Store.save(); A4.go('home');
+    } else ok(false, 'application non chargée dans la page de test');
 
     // ============ 11. Application ============
     group('Application — écrans');
