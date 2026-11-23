@@ -13,8 +13,8 @@
 
   // Date LOCALE (et non UTC) : la journée de jeu change à minuit chez l'enfant, pas à l'heure de Greenwich.
   const localDay = d => { d = d || new Date(); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
-  const newProfile = (id, name, avatar, age) => ({ id, name: String(name || '').trim().slice(0, 20), avatar: AVATARS.includes(avatar) ? avatar : 'awa', age: [3, 4, 5].includes(+age) ? +age : 4,
-    created: Date.now(), progress: {}, rewards: [], playTime: {}, storiesRead: [], skills: {}, recre: 0 });
+  const newProfile = (id, name, avatar, age) => ({ id, name: String(name || '').trim().slice(0, 20), avatar: AVATARS.includes(avatar) ? avatar : 'awa', age: [3, 4, 5, 6, 7, 8].includes(+age) ? +age : 4,
+    created: Date.now(), progress: {}, rewards: [], playTime: {}, storiesRead: [], skills: {}, recre: 0, stickers: [] });
 
   // ---- migrations : MIGRATIONS[n] fait passer de la version n à n+1 (additives : on n'enlève jamais de données) ----
   const MIGRATIONS = {
@@ -23,7 +23,7 @@
       if (s.limitMin !== undefined) { s.breakMin = +s.limitMin || 0; delete s.limitMin; }   // l'ancienne « limite » n'était qu'un rappel
       o.settings = Object.assign(defSettings(), s);
       Object.values(o.profiles || {}).forEach(p => {
-        p.age = [3, 4, 5].includes(+p.age) ? +p.age : 4; p.skills = p.skills || {}; p.recre = +p.recre || 0;
+        p.age = [3, 4, 5, 6, 7, 8].includes(+p.age) ? +p.age : 4; p.skills = p.skills || {}; p.recre = +p.recre || 0;
         p.progress = p.progress || {}; p.rewards = Array.isArray(p.rewards) ? p.rewards : []; p.playTime = p.playTime || {}; p.storiesRead = Array.isArray(p.storiesRead) ? p.storiesRead : [];
       });
       o.v = 2; return o;
@@ -79,6 +79,7 @@
       if (Array.isArray(p.storiesRead)) c.storiesRead = p.storiesRead.filter(x => typeof x === 'string').slice(0, 100).map(x => x.slice(0, 40));
       if (isObj(p.skills)) Object.keys(p.skills).filter(okKey).forEach(k => { const x = p.skills[k]; if (isObj(x)) c.skills[k] = { score: Math.min(1, Math.max(0, +x.score || 0)), plays: int(x.plays, 0, 1e6, 0), h: Array.isArray(x.h) ? x.h.slice(-10).map(n => int(n, 0, 3, 0)) : [], d: int(x.d, 0, 1e5, 0), last: typeof x.last === 'string' ? x.last.slice(0, 10) : '' }; });
       c.recre = int(p.recre, 0, 1e6, 0);
+      c.stickers = Array.isArray(p.stickers) ? p.stickers.filter(x => typeof x === 'string' && /^[a-z]{3,12}$/.test(x)).filter((x, i, a) => a.indexOf(x) === i).slice(0, 20) : [];   // autocollants du Voyage de Lumi
       if (isObj(p.garage)) c.garage = { vehicle: String(p.garage.vehicle || '').slice(0, 8), pilot: String(p.garage.pilot || '').slice(0, 8) };
       ['minis', 'missions'].forEach(m => { if (isObj(p[m])) { c[m] = {}; Object.keys(p[m]).filter(okKey).forEach(k => { c[m][k] = int(p[m][k], 0, 1e6, 0); }); } });
       out.profiles[id] = c;
