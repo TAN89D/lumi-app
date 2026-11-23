@@ -30,6 +30,23 @@ window.Home = (function () {
       <div class="pbar2" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${x.pct}"><i style="width:${Math.max(3, x.pct)}%"></i></div>
       <button class="h-btn cream slim" data-act="go" data-to="trophies"><span class="ic">${x.IC.trophy}</span>${esc(x.t('prog.rewards'))} <small>${esc(x.t('prog.rewardsCount', { n: x.rewardsGot, m: x.rewardsMax }))}</small></button></section>`;
 
+  // ----- écran de bienvenue (affiché une seule fois par ouverture de l'application) -----
+  const welcome = x => `<div class="welcome">
+      <div class="w-logo"><h1 class="logo">LUMI</h1><div class="sign">${esc(x.t('tagline'))}</div></div>
+      <img class="w-chars" src="${IMG}hero-941.jpg" srcset="${IMG}hero-640.jpg 640w, ${IMG}hero-941.jpg 941w" sizes="(max-width:760px) 100vw, 760px" width="941" height="435" alt="" decoding="async" fetchpriority="high">
+      <section class="w-msg"><b>${esc(x.t('welcome.title'))}</b><span>${esc(x.t('welcome.sub'))}</span></section>
+      <button class="h-start" data-act="begin"><span class="ic">${x.IC.play}</span>${esc(x.t('btn.start'))}</button>
+      <button class="w-parents" data-act="go" data-to="gate"><span class="ic">${x.IC.people}</span>${esc(x.t('btn.parentsArea'))}</button>
+    </div>`;
+
+  // ----- page des profils (écran 7) : sélection, création ; modification/suppression restent protégées par le contrôle parental -----
+  const profilesPage = x => `<div class="pagehead3 pg-prof"><button class="ib3" data-act="go" data-to="home" aria-label="${esc(x.t('back'))}">${x.IC.back}</button><h1>${esc(x.t('prof.title'))}</h1></div>
+      <div class="plist">${x.profiles.map(p => `<button class="prow ${p.id === x.profile.id ? 'on' : ''}" data-act="switch" data-id="${p.id}" aria-pressed="${p.id === x.profile.id}" aria-label="${esc(x.t('prof.select'))} : ${esc(p.name || x.t('prof.default'))}">
+        <span class="av">${avatar(x, x.avatarOf(p.avatar))}</span><span class="pn"><b>${esc(p.name || x.t('prof.default'))}</b><small>${esc(x.t('badge.age', { n: p.age }))}</small></span><span class="pc">${p.id === x.profile.id ? x.IC.check : ''}</span></button>`).join('')}</div>
+      <button class="h-btn purple wide" data-act="addprof"><span class="ic">＋</span>${esc(x.t('prof.create'))}</button>
+      <button class="h-btn cream slim" data-act="go" data-to="gate"><span class="ic">${x.IC.lock}</span>${esc(x.t('prof.manage'))}</button>
+      <p class="pinfo"><span class="ic">i</span>${esc(x.t('prof.info'))}</p>`;
+
   // ----- accueil -----
   function home(x) {
     const p = x.profile, name = p.name ? esc(p.name) : esc(x.t('prof.default'));
@@ -83,5 +100,20 @@ window.Home = (function () {
   // Quel onglet est actif selon l'écran affiché
   const activeTab = screen => ({ home: 'home', games: 'games', grp: 'games', cat: 'games', recre: 'games', missions: 'games', garage: 'games', trophies: 'trophies', progress: 'progress' }[screen] || 'home');
 
-  return { home, games, group, progressPage, nav, activeTab, avatar };
+  // ----- écran d'activité : personnage-guide + bulle de consigne (la vraie consigne, traduite) pour les exercices à choix -----
+  const guide = (x, ask) => `<div class="guide"><img src="${IMG}guide-boy.jpg" width="540" height="490" alt="" decoding="async"><button class="bubble" data-act="say" aria-label="${esc(x.t('play'))}"><span class="spk">${x.IC.speaker}</span><span>${esc(ask)}</span></button></div>`;
+
+  // ----- écran de réussite : le nombre d'étoiles est celui réellement gagné -----
+  const result = (x, r) => `<div class="result3"><img class="lion3" src="${IMG}lion-cheer.jpg" width="550" height="402" alt="" decoding="async">
+      <h1>${esc(r.name ? x.t('res.bravo', { name: r.name }) : x.t('res.bravo0'))}</h1><p class="sub">${esc(x.t('res.well'))}</p>
+      <div class="big-stars" role="img" aria-label="${esc(x.t('res.stars', { n: r.stars }))}">${[0, 1, 2].map(i => `<span class="star ${i < r.stars ? 'on' : ''}" style="animation-delay:${i * 0.25}s">★</span>`).join('')}</div>
+      ${r.reward ? `<div class="newc"><div class="pic">${r.reward}</div><span>${esc(x.t('newReward'))}</span></div>` : ''}${r.recre || ''}
+      <button class="h-start cont" data-act="${r.nextAct}" ${r.nextData}>${esc(x.t('btn.continue'))}<span class="ic">${x.IC.play}</span></button>
+      <div class="row3"><button class="ib" data-act="game" data-c="${r.cat}" data-g="${r.gid}" aria-label="${esc(x.t('replay'))}">${x.IC.replay}</button><button class="ib" data-act="go" data-to="home" aria-label="${esc(x.t('tab.home'))}">${x.IC.home}</button></div></div>`;
+
+  // ----- livre illustré des histoires (écran 5) -----
+  const book = (x, o) => `<div class="book">${o.scene}<div class="bk-title"><b>${esc(o.title)}</b><small>${esc(x.t('story.progress', { a: o.page + 1, b: o.pages }))}</small></div>
+      <div class="pbar2 small" role="progressbar" aria-valuemin="0" aria-valuemax="${o.pages}" aria-valuenow="${o.page + 1}"><i style="width:${Math.round((o.page + 1) / o.pages * 100)}%"></i></div>${o.text}${o.tools}</div>`;
+
+  return { home, games, group, progressPage, nav, activeTab, avatar, welcome, profilesPage, guide, result, book };
 })();

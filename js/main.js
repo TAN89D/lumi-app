@@ -38,12 +38,12 @@
   };
 
   // ---- état ----
-  let S = { screen: 'home', p: {} }, G = null, elapsed = 0, sinceBreak = 0, MH = null, lastTouch = Date.now(), nudgeT = null;
-  const NOTABS = ['play', 'result', 'gate', 'parent', 'moto', 'course', 'lock'];
+  let S = { screen: 'welcome', p: {} }, G = null, elapsed = 0, sinceBreak = 0, MH = null, lastTouch = Date.now(), nudgeT = null;
+  const NOTABS = ['welcome', 'profiles', 'play', 'result', 'gate', 'parent', 'moto', 'course', 'lock'];
   function go(screen, p) { S = { screen, p: p || {} }; render(); window.scrollTo(0, 0); }
   function render() {
     Sound.stop(); clearTimeout(nudgeT);
-    $app.className = (NOTABS.includes(S.screen) ? 'noTabs' : '') + (S.screen === 'home' ? ' homeApp' : '');
+    $app.className = (NOTABS.includes(S.screen) ? 'noTabs' : '') + (S.screen === 'home' ? ' homeApp' : '') + (S.screen === 'welcome' ? ' homeApp welcomeApp' : '');
     $app.innerHTML = screens[S.screen]() + (NOTABS.includes(S.screen) ? '' : tabsHTML());
     if (hooks[S.screen]) hooks[S.screen]();
   }
@@ -103,13 +103,15 @@
   }
   function homeCtx() {
     const p = P(), gs = GROUPS.reduce((a, g) => a + groupStars(g), 0), mx = GROUPS.reduce((a, g) => a + groupMax(g), 0);
-    return { t, dr, IC, art: Art, profile: p, avatar: avatarOf(p.avatar), groups: GROUPS, cat, label: Games.label, gameName: Games.gameName, starRow, starsOf, groupStars, groupMax,
+    return { t, dr, IC, art: Art, profile: p, profiles: Store.profiles(), avatarOf, avatar: avatarOf(p.avatar), groups: GROUPS, cat, label: Games.label, gameName: Games.gameName, starRow, starsOf, groupStars, groupMax,
       totalStars: totalStars(), pct: Math.round(gs / Math.max(1, mx) * 100), rewardsGot: p.rewards.filter(r => r.type === 'draw').length, rewardsMax: COLLECT.length, mission: missionInfo(),
       mastered: Skills.summary(p).filter(s => s.level === 2).map(s => t('skill.' + s.id)) };
   }
 
   // ================= ÉCRANS =================
   const screens = {
+    welcome() { return Home.welcome(homeCtx()); },
+    profiles() { return Home.profilesPage(homeCtx()); },
     home() { return Home.home(homeCtx()); },
     games() { return Home.games(homeCtx()); },
     progress() { return Home.progressPage(homeCtx()); },
@@ -122,13 +124,9 @@
     play() { return playHTML(); },
     result() {
       const c = G.cd, rw = G.newReward, nxt = c.games[c.games.findIndex(g => g.id === G.gid) + 1];
-      return `<div class="result" style="--b:var(--${c.c});--bd:var(--${c.c}D)"><div class="lu">${dr('lion')}</div>
-        <div class="big-stars" aria-label="${G.stars} / 3">${[0, 1, 2].map(i => `<span class="star ${i < G.stars ? 'on' : ''}" style="animation-delay:${i * 0.25}s">★</span>`).join('')}</div>
-        ${rw ? `<div class="newc"><div class="pic">${dr(rw)}</div><span>${t('newReward')}</span></div>` : ''}
-        ${G.recre ? `<button class="recre" data-act="mission" data-m="${pick(L.missions).id}"><div class="pic">${dr('c_recre')}</div>${t('recreTour')}</button>` : ''}
-        <div class="row3"><button class="ib" data-act="game" data-c="${G.cat}" data-g="${G.gid}" aria-label="${t('replay')}">${IC.replay}</button>
-        <button class="ib main" data-act="${nxt ? 'game' : 'cat'}" data-c="${G.cat}" data-g="${nxt ? nxt.id : ''}" data-id="${G.cat}" aria-label="${t('next')}">${IC.play}</button>
-        <button class="ib" data-act="go" data-to="home" aria-label="${t('tab.home')}">${IC.home}</button></div></div>`;
+      const recre = G.recre ? `<button class="recre" data-act="mission" data-m="${pick(L.missions).id}"><div class="pic">${dr('c_recre')}</div>${t('recreTour')}</button>` : '';
+      return `<div class="result result3-wrap" style="--b:var(--${c.c});--bd:var(--${c.c}D)">` + Home.result(homeCtx(), { name: P().name || '', stars: G.stars, reward: rw ? dr(rw) : '', recre,
+        nextAct: nxt ? 'game' : 'cat', nextData: `data-c="${G.cat}" data-g="${nxt ? nxt.id : ''}" data-id="${G.cat}"`, cat: G.cat, gid: G.gid }) + '</div>';
     },
     trophies() {
       const have = P().rewards.filter(r => r.type === 'draw').map(r => r.item), p = P(), g = garage();
@@ -216,7 +214,7 @@
   function playHTML() {
     const r = cur(), c = G.cd;
     return `<div class="play" style="--b:var(--${c.c});--bd:var(--${c.c}D)"><div class="ptop"><button class="ib" data-act="leave" aria-label="${t('close')}">${IC.close}</button><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="${G.rounds.length}" aria-valuenow="${G.idx}"><i style="width:${Math.round(G.idx / G.rounds.length * 100)}%"></i></div></div>
-      <button class="ask" id="ask" data-act="say"><span class="spk">${IC.speaker}</span><span>${esc(r.ask.text)}</span></button><div class="area">${body(r)}</div></div>`;
+      ${r.type === 'choose' ? Home.guide(homeCtx(), r.ask.text) : `<button class="ask" id="ask" data-act="say"><span class="spk">${IC.speaker}</span><span>${esc(r.ask.text)}</span></button>`}<div class="area">${body(r)}</div></div>`;
   }
   const okBtn = (act, dis) => `<button class="okb" id="okb" data-act="${act}" ${dis ? 'disabled' : ''} aria-label="${t('done')}">${IC.check}</button>`;
   const palette = () => `<div class="palette">${Object.values(V.colors).map(c => c.hex).concat(['#ffffff']).map((h, i) => `<button class="pal ${i === 0 ? 'on' : ''}" data-act="pal" data-c="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}</div>`;
@@ -244,8 +242,9 @@
     if (r.type === 'story') {
       const s = r.story, pg = s.pages[G.pg || 0], last = (G.pg || 0) === s.pages.length - 1;
       const sc = s.tale ? Art.storyScene(pg.scene, pg.chars) : `<div class="emj" aria-hidden="true">${pg.img}</div>`;
-      return `${sc}<div class="stext" lang="${s.code}">${pg.text}${last && s.origin ? `<div class="origin">${s.origin}</div>` : ''}</div>
-      <div class="tools"><button class="ib" data-act="spg" data-d="-1" aria-label="${t('back')}">${IC.back}</button><button class="ib" data-act="sread" aria-label="${t('play')}">${IC.speaker}</button><button class="ib" style="background:var(--leaf);color:#fff" data-act="spg" data-d="1" aria-label="${last ? t('done') : t('next')}">${last ? IC.check : IC.play}</button></div>`;
+      return Home.book(homeCtx(), { scene: sc, title: Games.gameName(G.cd, G.gd), page: G.pg || 0, pages: s.pages.length,
+        text: `<div class="stext" lang="${s.code}">${pg.text}${last && s.origin ? `<div class="origin">${s.origin}</div>` : ''}</div>`,
+        tools: `<div class="tools"><button class="ib" data-act="spg" data-d="-1" aria-label="${t('back')}">${IC.back}</button><button class="ib" data-act="sread" aria-label="${t('play')}">${IC.speaker}</button><button class="ib" data-act="sstop" aria-label="${t('story.pause')}">❚❚</button><button class="ib" style="background:var(--leaf);color:#fff" data-act="spg" data-d="1" aria-label="${last ? t('done') : t('next')}">${last ? IC.check : IC.play}</button></div>` });
     }
     return '';
   }
@@ -445,25 +444,32 @@
       return `<p class="adv">${a.kind === 'ready' ? t('adv.ready', { skill: sk }) + (a.game ? t('adv.ready.next', { game: gm }) : t('adv.ready.keep')) : t('adv.' + a.kind, { skill: sk, game: gm })}</p>`; }).join('') || `<p>${t('adv.none')}</p>`;
     const ls = [0, 10, 15, 20, 30].map(m => [m, m ? t('p.min', { n: m }) : t('p.none')]), lk = [0, 20, 30, 45, 60, 90].map(m => [m, m ? t('p.min', { n: m }) : t('p.none')]);
     const fm = Sound.voices();
-    return `<div class="pagehead"><button class="ib" data-act="go" data-to="home" aria-label="${t('back')}">${IC.back}</button><h1>${t('p.title')}</h1></div>
-      <div class="sec"><h2>${t('p.profiles')}</h2>${profs}<button class="btn sun" data-act="addprof">＋ ${t('p.addProfile')}</button></div>
+    const tab = ['follow', 'limits', 'content', 'settings'].includes(S.p.tab) ? S.p.tab : 'follow';
+    const secs = {
+      follow: `
       <div class="sec"><h2>${t('adv.title')}</h2>${adv}</div>
       <div class="sec"><h2>${t('p.skills')} — ${esc(p.name || '')}</h2>${skills}<p class="note">${t('p.skillsHelp')}</p></div>
       <div class="sec"><h2>${t('p.progress')}</h2>${CATS.map(c => { const done = c.games.filter(g => starsOf(c.id, g.id) > 0).length; return `<div class="bline"><span>${Games.label(c)}</span><div class="pbx"><i style="width:${Math.round(catStars(c) / (c.games.length * 3) * 100)}%"></i></div><span style="width:44px;text-align:right">${done}/${c.games.length}</span></div>`; }).join('')}
-        <div class="row"><span>${t('p.hints')}</span><b>${Object.values(p.progress).reduce((a, x) => a + (x.hints || 0), 0)}</b></div><div class="row"><span>${t('p.recres')}</span><b>${p.minis ? Object.values(p.minis).reduce((a, b) => a + b, 0) : 0}</b></div></div>
-      <div class="sec"><h2>${t('p.time')}</h2><div class="row"><span>${t('p.today')}</span><b>${mins(Store.playedToday())}</b></div>${days.map(d => `<div class="row"><span>${d}</span><span>${mins(pt[d])}</span></div>`).join('')}</div>
-      <div class="sec"><h2>${t('p.settings')}</h2>${sel('lang', I18n.LANGS.map(l => [l.code, l.label]), s.lang, t('p.language'))}${sw('voice', t('p.voice'))}
+        <div class="row"><span>${t('p.hints')}</span><b>${Object.values(p.progress).reduce((a, x) => a + (x.hints || 0), 0)}</b></div><div class="row"><span>${t('p.recres')}</span><b>${p.minis ? Object.values(p.minis).reduce((a, b) => a + b, 0) : 0}</b></div></div>`,
+      limits: `
+      <div class="sec"><h2>${t('p.time')}</h2><div class="row"><span>${t('p.today')}</span><b>${mins(Store.playedToday())}</b></div>${days.map(d => `<div class="row"><span>${d}</span><span>${mins(pt[d])}</span></div>`).join('')}${sel('breakMin', ls, s.breakMin, t('p.break'))}${sel('lockMin', lk, s.lockMin, t('p.lock'))}</div>`,
+      content: `
+      <div class="sec"><h2>${t('p.profiles')}</h2>${profs}<button class="btn sun" data-act="addprof">＋ ${t('p.addProfile')}</button></div>
+      <div class="sec"><h2>${t('p.myvoice')}</h2><p style="margin:0 0 6px">${t('p.myvoiceHelp')}</p>${sw('rec', t('p.rec'))}<div class="row"><span>${t('p.clips')}</span><b>${Sound.clipCount()}</b></div><button class="btn warn" data-act="clearclips">${t('p.clearClips')}</button></div>`,
+      settings: `
+      <div class="sec"><h2>${t('p.settings')}</h2>${sel('lang', I18n.LANGS.map(l => [l.code, l.label]), s.lang, t('p.language'))}<div class="row soon"><span>Bamanankan</span><em>${t('lang.soon')}</em></div><div class="row soon"><span>Español</span><em>${t('lang.soon')}</em></div>${sw('voice', t('p.voice'))}
         <div class="row"><span>${t('p.voiceFr')}</span><span style="text-align:right;font-size:.85rem">${Sound.voiceName() ? '✔ ' + esc(Sound.voiceName()) : Sound.missing() ? '⚠ ' + t('p.voiceMissing', { lang: I18n.speech() }) : '—'}</span></div>
         ${fm.length ? sel('vname', [['', t('p.voiceAuto')]].concat(fm.map(n => [n, n])), s.vname, t('p.voiceChoose')) : ''}
         <div class="row"><span>${t('p.rate')}</span><input type="range" min="0.5" max="1.1" step="0.05" value="${s.rate}" data-inp="rate" aria-label="${t('p.rate')}"></div>
         <div class="row"><span>${t('p.pitch')}</span><input type="range" min="0.6" max="1.3" step="0.05" value="${s.pitch}" data-inp="pitch" aria-label="${t('p.pitch')}"></div>
         <div class="row"><span>${t('p.volume')}</span><input type="range" min="0" max="1" step="0.1" value="${s.volume}" data-inp="volume" aria-label="${t('p.volume')}"></div>
         <button class="btn" data-act="testvoice">${t('p.testVoice')}</button><button class="btn sun" data-act="howinstall">${t('p.install')}</button>${sw('sfx', t('p.sfx'))}
-        ${sel('textScale', [[1, '100 %'], [1.25, '125 %'], [1.5, '150 %']], s.textScale, t('p.textSize'))}${sw('big', t('p.bigButtons'))}${sw('calm', t('p.calm'))}${sw('contrast', t('p.contrast'))}${sw('minis', t('p.minis'))}
-        ${sel('breakMin', ls, s.breakMin, t('p.break'))}${sel('lockMin', lk, s.lockMin, t('p.lock'))}</div>
-      <div class="sec"><h2>${t('p.myvoice')}</h2><p style="margin:0 0 6px">${t('p.myvoiceHelp')}</p>${sw('rec', t('p.rec'))}<div class="row"><span>${t('p.clips')}</span><b>${Sound.clipCount()}</b></div><button class="btn warn" data-act="clearclips">${t('p.clearClips')}</button></div>
+        ${sel('textScale', [[1, '100 %'], [1.25, '125 %'], [1.5, '150 %']], s.textScale, t('p.textSize'))}${sw('big', t('p.bigButtons'))}${sw('calm', t('p.calm'))}${sw('contrast', t('p.contrast'))}${sw('minis', t('p.minis'))}</div>
       <div class="sec"><h2>${t('p.data')}</h2><p style="margin:0">${t('p.dataText')}</p><button class="btn" data-act="export">${t('p.export')}</button><button class="btn sun" data-act="import">${t('p.import')}</button><button class="btn warn" data-act="wipe">${t('p.wipe')}</button>
-        <input type="file" id="imp" accept="application/json,.json" hidden></div>`;
+        <input type="file" id="imp" accept="application/json,.json" hidden></div>`
+    };
+    return `<div class="pagehead parenthead"><button class="ib" data-act="go" data-to="home" aria-label="${t('back')}">${IC.back}</button><h1>${t('p.title')}</h1></div>
+      <div class="ptabs" role="tablist">${[['follow', 'pt.follow'], ['limits', 'pt.limits'], ['content', 'pt.content'], ['settings', 'pt.settings']].map(([id, k]) => `<button class="ptab ${tab === id ? 'on' : ''}" role="tab" aria-selected="${tab === id}" data-act="ptab" data-tab="${id}">${t(k)}</button>`).join('')}</div>${secs[tab]}`;
   }
   function confirmBox(msg, yes) {
     window._lumiYes = yes;
@@ -538,7 +544,10 @@
     mleft() { if (MH) MH.left(); }, mright() { if (MH) MH.right(); },
     pickg(el) { const v = (el.dataset.k === 'vehicle' ? L.vehicles : L.pilots).find(x => x.e === el.dataset.e); if (totalStars() < v.need) { toast('★ ' + v.need, false); return; } P().garage = Object.assign(garage(), { [el.dataset.k]: v.e }); Store.save(); render(); },
     // -- profils --
-    profiles() { profilesModal(); },
+    begin() { go('home'); },
+    profiles() { go('profiles'); },
+    ptab: el => { S.p.tab = el.dataset.tab; render(); },
+    sstop() { Sound.stop(); },
     switch(el) { Store.setActive(el.dataset.id); sinceBreak = 0; hideModal(); if (!checkLock()) render(); },
     addprof() { addProfileForm(); },
     pickav(el) { window._lumiAv = el.dataset.a; document.querySelectorAll('.avb').forEach(b => b.classList.toggle('on', b === el)); },
