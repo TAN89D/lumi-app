@@ -356,3 +356,13 @@ body.contrast #decor{opacity:.3}
 .h-voyage b{display:block;font-size:clamp(1.15rem,5.4vw,1.5rem)}.h-voyage small{font-weight:800}
 .h-voyage:active{transform:translateY(4px)}
 .newc.sticker{background:#fff9d0;border:3px solid #ffd62e}
+
+
+/* =====================================================================
+   V4 (intégration d'assets) — logo A validé : image + slogan en vrai texte
+   ===================================================================== */
+.logo.logo-wrap{font-size:inherit;line-height:0;letter-spacing:0;text-shadow:none;margin:0}
+.logo-img{display:block;width:min(74vw,380px);height:auto;margin:0 auto;filter:drop-shadow(0 6px 8px rgba(60,30,0,.25))}
+.w-logo .sign,.h-logo .sign{margin-top:-6px}
+.w-logo .logo-img{width:min(80vw,420px)}
+body.contrast .logo-img{filter:none}
