@@ -153,8 +153,13 @@
     const NAME = Env.dbName, blob = () => new Blob([new Uint8Array(50)], { type: 'audio/webm' });
     const countDb = () => new Promise(res => { const q = indexedDB.open(NAME, 1); q.onupgradeneeded = () => q.result.createObjectStore('clips'); q.onsuccess = () => { const c = q.result.transaction('clips').objectStore('clips').count(); c.onsuccess = () => { q.result.close(); res(c.result); }; }; q.onerror = () => res(-1); });
     await Sound.ready(); await Sound.clearClips();
+    // Certains moteurs (WebKit en contexte de test sans profil persistant) refusent de stocker un Blob dans IndexedDB : on le détecte par une sonde,
+    // puis on vérifie que LUMI le DIT (saveClip renvoie faux et le clip reste utilisable en mémoire) au lieu de prétendre l'avoir gardé.
+    const canStoreBlob = await new Promise(res => { try { const q = indexedDB.open('lumi-probe-' + Env.slug, 1); q.onupgradeneeded = () => q.result.createObjectStore('s'); q.onerror = () => res(false);
+      q.onsuccess = () => { try { const d = q.result, tx = d.transaction('s', 'readwrite'); tx.objectStore('s').put(blob(), 'k'); tx.oncomplete = () => { d.close(); indexedDB.deleteDatabase('lumi-probe-' + Env.slug); res(true); }; tx.onerror = tx.onabort = () => { d.close(); indexedDB.deleteDatabase('lumi-probe-' + Env.slug); res(false); }; } catch (e) { res(false); } }; } catch (e) { res(false); } });
     let saved = await Sound.saveClip({ id: 'fr:test.a', text: 'a' }, blob()); await Sound.saveClip({ id: 'fr:test.b', text: 'b' }, blob());
-    ok(saved === true && await countDb() === 2, 'saveClip confirme l’écriture dans IndexedDB');
+    if (canStoreBlob) ok(saved === true && await countDb() === 2, 'saveClip confirme l’écriture dans IndexedDB');
+    else ok(saved === false && Sound.hasClip({ id: 'fr:test.a', text: 'a' }), 'ce moteur ne stocke pas les Blob dans IndexedDB : saveClip renvoie faux (non conservé) et le clip reste utilisable en mémoire');
     let cr = await Sound.clearClips();
     ok(cr.ok === true && cr.state === 'success' && cr.remaining === 0, 'succès : état « success », 0 restant');
     ok(await countDb() === 0 && Sound.clipCount() === 0, 'succès VÉRIFIÉ : la base est vide et la mémoire aussi');
@@ -320,6 +325,7 @@
     ok(/new Request\(f, \{ cache: 'reload' \}\)/.test(swText) && /LEGACY = \/\^lumi-v/.test(swText) && /req\.url\.indexOf\(SCOPE\) !== 0/.test(swText), 'installation sans cache HTTP périmé ; anciens caches LUMI ciblés ; requêtes hors de LUMI ignorées');
     ok(/k\.indexOf\(PREFIX\) === 0 && k !== CACHE\) \|\| LEGACY\.test\(k\)/.test(swText), 'seuls les caches de LUMI (préfixe + anciens noms) sont supprimés');
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      for (const r0 of await navigator.serviceWorker.getRegistrations()) await r0.unregister();   // départ propre : une installation précédente ne doit pas fausser le test
       for (const k of await caches.keys()) if (/^(lumi-app::|lumi-v|autre-app|test-foreign)/.test(k)) await caches.delete(k);
       const foreign = await caches.open('autre-app-cache-v1'); await foreign.put('/x', new Response('ne pas toucher'));
       const legacyCache = await caches.open('lumi-v24'); await legacyCache.put('/x', new Response('ancien'));
