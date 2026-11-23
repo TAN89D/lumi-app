@@ -1,0 +1,1 @@
+Tests automatises de LUMI V3 : ouvrir index.html via un serveur local.
