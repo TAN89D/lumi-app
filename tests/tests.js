@@ -562,6 +562,19 @@
     }
     Object.assign(P5, JSON.parse(snap5)); Store.save(); if (A5) A5.go('home');
 
+
+    // ============ 10f. V4 : logo A validé (image) + slogan en vrai texte ============
+    group('V4 — logo A (identité validée)');
+    const lsz = await Promise.all(['logo-lumi-480.webp', 'logo-lumi-720.webp'].map(f => fetch('../assets/img/' + f, { cache: 'no-store' }).then(r => r.ok ? r.blob().then(b => b.size) : 0)));
+    const swV4 = await (await fetch('../sw.js', { cache: 'no-store' })).text();
+    ok(lsz.every(n => n > 0 && n < 100000) && swV4.indexOf("'assets/img/logo-lumi-480.webp'") >= 0 && swV4.indexOf("'assets/img/logo-lumi-720.webp'") >= 0, 'logo A : deux largeurs WebP légères (' + lsz.map(n => Math.round(n / 1024) + ' Ko').join(', ') + '), mises en cache hors ligne');
+    const AV = window.LumiApp; if (AV) {
+      ['welcome', 'home'].forEach(sc => { AV.go(sc); const im = document.querySelector('.logo-img'), h1 = im && im.closest('h1'), sg = document.querySelector('.sign');
+        ok(!!im && im.getAttribute('alt') === 'LUMI' && !!h1 && /srcset=|srcset/.test(im.outerHTML) && sg && sg.textContent === I18n.t('tagline') && !/<img/.test(sg.innerHTML), 'écran « ' + sc + ' » : logo A (alt « LUMI », titre h1) et slogan en vrai texte traduisible, jamais dans l’image'); });
+      AV.go('welcome'); const im2 = document.querySelector('.logo-img'); im2.dispatchEvent(new Event('error')); ok(!document.querySelector('.logo-img') && /LUMI/.test(document.querySelector('.w-logo h1').textContent), 'si l’image du logo ne charge pas, le texte « LUMI » prend le relais');
+      I18n.setLang('en'); AV.go('welcome'); ok(/Learning by playing/.test(document.querySelector('.sign').textContent), 'slogan anglais sous le logo'); I18n.setLang('fr'); AV.go('home');
+    }
+
     // ============ 11. Application ============
     group('Application — écrans');
     const A = window.LumiApp;
