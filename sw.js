@@ -1,7 +1,7 @@
 // Service worker de LUMI : usage hors ligne. Stratégie « cache d'abord, mise à jour en arrière-plan ».
 // Sur GitHub Pages, toutes les applications d'un compte partagent la même origine ET les mêmes caches : le nom du cache contient donc
 // l'adresse (scope) de LUMI, et on ne supprime JAMAIS un cache qui n'est pas à nous.
-const VERSION = '4-0-0-lot5';   // à incrémenter à chaque livraison : l'ancien cache de LUMI est alors supprimé proprement
+const VERSION = '4-0-2-lot5';   // à incrémenter à chaque livraison : l'ancien cache de LUMI est alors supprimé proprement
 const SCOPE = self.registration.scope;
 const PREFIX = 'lumi-app::' + SCOPE + '::';
 const CACHE = PREFIX + VERSION;

@@ -68,7 +68,11 @@ window.Home = (function () {
         <div class="h-age" role="img" aria-label="${esc(x.t('p.age'))} : ${esc(x.t('badge.age', { n: p.age }))}"><b>${esc(x.t('badge.age', { n: p.age }))}</b></div>
         <img class="h-chars" src="${IMG}hero-941.jpg" srcset="${IMG}hero-640.jpg 640w, ${IMG}hero-941.jpg 941w" sizes="(max-width:760px) 100vw, 760px" width="941" height="435" alt="" decoding="async" fetchpriority="high">
       </section>
-      <section class="h-welcome"><b>${esc(p.name ? x.t('helloName', { name: p.name }) : x.t('hello'))}</b><span>${esc(x.t('home.ready'))}</span></section>
+      <section class="h-welcome${x.mascot ? ' h-welcome-lumi' : ''}">
+        ${x.mascot ? '<div class="mascot-slot h-lumi" data-state="wave" aria-hidden="true"></div>' : ''}
+        <div><b>${esc(p.name ? x.t('helloName', { name: p.name }) : x.t('hello'))}</b><span>${esc(x.t('home.ready'))}</span>
+        ${x.mascot ? `<button class="h-wave" type="button" data-act="wave-lumi">${esc(x.t('mascot.wave'))}</button>` : ''}</div>
+      </section>
       <button class="h-start" data-act="auto"><span class="ic">${x.IC.play}</span>${esc(x.t('btn.start'))}</button>
       <div class="h-row">
         <button class="h-btn purple" data-act="profiles"><span class="ic">${x.IC.person}</span>${esc(x.t('btn.profile'))}</button>
@@ -109,7 +113,7 @@ window.Home = (function () {
   const activeTab = screen => ({ home: 'home', games: 'games', grp: 'games', cat: 'games', recre: 'games', missions: 'games', garage: 'games', trophies: 'trophies', progress: 'progress', voyage: 'games' }[screen] || 'home');
 
   // ----- écran d'activité : personnage-guide + bulle de consigne (la vraie consigne, traduite) pour les exercices à choix -----
-  const guide = (x, ask) => `<div class="guide${x.mascot ? ' guide-lumi' : ''}">${x.mascot ? '<div class="mascot-slot g-lumi" data-state="think" aria-hidden="true"></div>' : `<img src="${IMG}guide-boy.jpg" width="540" height="490" alt="" decoding="async">`}<button class="bubble" id="ask" data-act="say"><span class="spk" aria-hidden="true">${x.IC.speaker}</span><span>${esc(ask)}</span></button></div>`;
+  const guide = (x, ask, compact = false) => `<div class="guide${x.mascot ? ' guide-lumi' : ''}${compact ? ' guide-compact' : ''}">${x.mascot ? '<div class="mascot-slot g-lumi" data-state="think" aria-hidden="true"></div>' : `<img src="${IMG}guide-boy.jpg" width="540" height="490" alt="" decoding="async">`}<button class="bubble" id="ask" data-act="say"><span class="spk" aria-hidden="true">${x.IC.speaker}</span><span>${esc(ask)}</span></button></div>`;
 
   // ----- écran de réussite : le nombre d'étoiles est celui réellement gagné -----
   const result = (x, r) => `<div class="result3">${x.mascot ? `<div class="mascot-slot r-lumi" data-state="cheer" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : `<img class="lion3" src="${IMG}lion-cheer.jpg" width="550" height="402" alt="" decoding="async">`}
