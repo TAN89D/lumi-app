@@ -286,6 +286,31 @@
     const numberGames = Games.CATS.find(c => c.id === 'numbers').games;
     const mirrorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'symmetry');
     const inspect = document.createElement('div');
+    const mazeGame = Games.CATS.find(c => c.id === 'logic').games.find(g => g.id === 'maze');
+    const pathLengths = [];
+    for (const age of [5, 6, 7, 8]) {
+      const rounds = mazeGame.make(3, { age });
+      const lengths = rounds.map(({ grid, position, goal }) => {
+        const queue = [[...position, 0]], seen = new Set([position.join()]);
+        for (let i = 0; i < queue.length; i++) {
+          const [x, y, distance] = queue[i];
+          if (x === goal[0] && y === goal[1]) return distance;
+          for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+            const point = [x + dx, y + dy];
+            if (['.', 'S', 'E'].includes(grid[point[1]]?.[point[0]]) && !seen.has(point.join())) {
+              seen.add(point.join());
+              queue.push([...point, distance + 1]);
+            }
+          }
+        }
+        return 0;
+      });
+      ok(rounds.length === 2 && lengths.every(Boolean) && rounds.every(({ grid, position, goal }) =>
+        grid.every(row => row.length === grid[0].length) && grid[position[1]][position[0]] === 'S'
+        && grid[goal[1]][goal[0]] === 'E'), 'labyrinthe : deux sorties accessibles à ' + age + ' ans');
+      pathLengths.push(lengths.reduce((a, b) => a + b, 0));
+    }
+    ok(pathLengths[0] < pathLengths[1] && pathLengths[1] < pathLengths[2], 'labyrinthe : trajets plus longs aux paliers supérieurs');
     const geography = Games.CATS.find(c => c.id === 'countries').games.find(g => g.id === 'map');
     const countryIds = Object.keys(LUMI.vocab.countries);
     for (const language of ['fr', 'en']) {

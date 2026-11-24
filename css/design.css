@@ -397,6 +397,16 @@ body.contrast .logo-img{filter:none}
 .map-clue summary{padding:10px 12px;border-radius:12px;font-weight:800;cursor:pointer}
 .map-clue summary:focus-visible{outline-offset:-4px}
 .map-clue p{margin:0;padding:0 12px 10px}
+.maze-game{display:grid;justify-items:center;gap:12px;width:100%;color:var(--ink2)}
+.maze-board{display:block;width:min(100%,350px,47vh);height:auto;background:#f9ead1;border:3px solid #526942;border-radius:14px}
+.maze-wall{fill:#47774f}
+.maze-path{fill:#fff6df;stroke:#d8be8f}
+.maze-goal{fill:#fce088;stroke:#8c5611;stroke-width:2}
+.maze-controls{display:grid;grid-template-areas:". up ." "left down right";gap:6px}
+.maze-controls .maze-arrow{width:56px;height:56px;min-width:56px;min-height:56px;font-size:1.55rem}
+.maze-up{grid-area:up}.maze-right{grid-area:right}.maze-down{grid-area:down}.maze-left{grid-area:left}
+.maze-status{margin:2px 0 0;max-width:370px;padding:8px 12px;border-radius:12px;background:#fff6df;text-align:center;font-size:.92rem}
+@media (prefers-reduced-motion:no-preference){body:not(.calm) .maze-player{transition:transform .16s ease-out}}
 .sudoku-grid{border-collapse:collapse;border:3px solid var(--ink2);color:var(--ink2);background:#fff6df}
 .sudoku-grid td{width:clamp(2.3rem,12vw,3.4rem);height:clamp(2.3rem,12vw,3.4rem);border:1px solid #77608a;text-align:center;font-size:1.5rem;font-weight:800}
 .sudoku-grid td:nth-child(2){border-right:3px solid var(--ink2)}
