@@ -70,6 +70,43 @@ test.describe('Tests automatiques de LUMI (page tests/index.html)', () => {
   });
 });
 
+test('le lot 3 permet de rejouer une mélodie et de répondre à une deuxième question de conte', async ({ page }) => {
+  await page.clock.install();
+  await openHome(page);
+  await page.evaluate(() => {
+    Store.profile().age = 8;
+    Store.s().voice = false;
+    LumiApp.startGame('music', 'melody');
+  });
+  const replay = page.locator('[data-act="melody"]');
+  await replay.click();
+  const sequence = () => page.evaluate(() => LumiApp.game.rounds[LumiApp.game.idx].seq);
+  const original = await sequence();
+  await page.clock.runFor(600 * original.length + 100);
+  await replay.click();
+  expect(await sequence()).toEqual(original);
+  await page.clock.runFor(600 * original.length + 100);
+  await page.locator(`.bar[data-note="${original[0]}"]`).press('Enter');
+  await expect(page.locator('#melody-progress')).toHaveJSProperty('value', 1);
+
+  await page.evaluate(() => {
+    LumiApp.startGame('stories', 'mangue');
+    for (let i = 0; i < 4; i++) document.querySelector('[data-act="spg"][data-d="1"]').click();
+  });
+  const answer = async () => {
+    const index = await page.evaluate(() => LumiApp.game.quiz.choices.findIndex(choice => choice.ok));
+    await page.locator('.q-ch').nth(index).click();
+    await page.clock.runFor(2000);
+  };
+  await answer();
+  await expect(page.locator('.q-bubble')).toContainText('Pourquoi');
+  expect(await page.evaluate(() => Store.profile().storiesRead.includes('mangue'))).toBe(false);
+  await answer();
+  await expect(page.locator('.result3')).toBeVisible();
+  expect(await page.evaluate(() => ({ age: Store.profile().age, read: Store.profile().storiesRead.includes('mangue') })))
+    .toEqual({ age: 8, read: true });
+});
+
 test.describe('Parcours (émulation de l’appareil du projet)', () => {
   test('l’accueil s’affiche sans débordement horizontal', async ({ page }) => {
     await openHome(page);

@@ -22,7 +22,7 @@ window.Rules = (function () {
     // V3.5 : paliers 6, 7 et 8 ans (plus de nombres, mémoire plus grande, suites plus longues, plus de choix)
     6: { countMax: 9, plusMax: 10, basket: [4, 5, 6], melody: [3, 4, 4], pairs: 5, traces: 4, shapeCounts: [4, 4], suiteLen: ['ABC', 'AABB', 'ABCD'], choices: 4, calcMax: 20, tables: [2, 5, 10] },
     7: { countMax: 10, plusMax: 10, basket: [5, 6, 8], melody: [4, 4, 5], pairs: 6, traces: 4, shapeCounts: [4, 5], suiteLen: ['AABB', 'ABCD', 'ABCD'], choices: 4, calcMax: 50, tables: [2, 3, 4, 5, 10] },
-    8: { countMax: 10, plusMax: 10, basket: [6, 8, 9], melody: [4, 5, 6], pairs: 6, traces: 5, shapeCounts: [5, 5], suiteLen: ['ABCD', 'AABB', 'ABCD'], choices: 4, calcMax: 100, tables: [2, 3, 4, 5, 6, 10] }
+    8: { countMax: 10, plusMax: 10, basket: [6, 8, 9], melody: [5, 6, 8], pairs: 6, traces: 5, shapeCounts: [5, 5], suiteLen: ['ABCD', 'AABB', 'ABCD'], choices: 4, calcMax: 100, tables: [2, 3, 4, 5, 6, 10] }
   };
   const caps = age => CAPS[age] || CAPS[4];
 

@@ -374,6 +374,10 @@ body.contrast .logo-img{filter:none}
 .pause-lumi{width:110px;margin:0 auto}
 .symmetry-grid{display:block;width:min(100%,380px);height:auto;color:#5a356e}
 .symmetry-grid text{fill:currentColor;font-size:21px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+.melody-tools{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:14px}
+.melody-tools progress{width:min(100%,260px);height:14px;accent-color:var(--leafD)}
+.melody-tools .btn:disabled{opacity:.65}
+.word-parts{display:flex;align-items:center;gap:.35em;color:var(--ink2)}
 .lumi .l-thought,.lumi .l-pause-sign{display:none}
 .lumi[data-state=think] .l-thought,.lumi[data-state=pause] .l-pause-sign{display:inline}
 .lumi[data-state=think] .l-head{transform:rotate(-7deg)}
