@@ -637,6 +637,13 @@
     ok(/updateViaCache: 'none'/.test(mainSrc) && /controllerchange/.test(mainSrc) && /pendingReload/.test(mainSrc), 'le service worker est redemandé au réseau et la nouvelle version se recharge d’elle-même (jamais en plein jeu)');
     if (window.LumiApp) { LumiApp.go('parent'); document.querySelector('.ptab[data-tab="settings"]').click(); ok(/version \d+\.\d+/.test(document.querySelector('.appver').textContent), 'la version de LUMI est affichée dans l’espace parents (Paramètres)'); LumiApp.go('home'); }
 
+    group('V3.6.2 — icône de l’application (logo A)');
+    const mf = JSON.parse(await (await fetch('../manifest.webmanifest', { cache: 'no-store' })).text()), swI = await (await fetch('../sw.js', { cache: 'no-store' })).text();
+    const isz = await Promise.all(mf.icons.map(i => fetch('../' + i.src, { cache: 'no-store' }).then(r => r.ok ? r.blob().then(b => ({ n: b.size, w: 0 })) : { n: 0 })));
+    ok(mf.icons.length === 3 && mf.icons.every(i => /\.png$/.test(i.src)) && mf.icons.some(i => i.purpose === 'maskable' && i.sizes === '512x512') && mf.icons.filter(i => i.purpose === 'any').length === 2 && !mf.icons.some(i => /svg/.test(i.type)), 'manifeste : icônes PNG « any » 192 et 512 + une icône « maskable » 512 (plus d’ancienne icône vectorielle)');
+    ok(isz.every(x => x.n > 1000 && x.n < 110000) && mf.icons.every(i => swI.indexOf("'" + i.src + "'") >= 0), 'icônes légères (< 110 Ko) et présentes dans le cache hors ligne');
+    const idxH = await (await fetch('../index.html', { cache: 'no-store' })).text(); ok(/rel="icon" href="icon-192\.png"/.test(idxH) && /apple-touch-icon" href="icon-192\.png"/.test(idxH), 'onglet du navigateur et iPhone utilisent la nouvelle icône');
+
     // ============ 11. Application ============
     group('Application — écrans');
     const A = window.LumiApp;
