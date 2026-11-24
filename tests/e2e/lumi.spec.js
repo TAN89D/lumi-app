@@ -70,6 +70,56 @@ test.describe('Tests automatiques de LUMI (page tests/index.html)', () => {
   });
 });
 
+test('les rythmes se rejouent, se valident et s’arrêtent en quittant la manche', async ({ page }) => {
+  await page.clock.install();
+  await openHome(page);
+  await page.evaluate(() => {
+    Store.profile().age = 8;
+    Store.s().voice = false;
+    LumiApp.startGame('music', 'rhythm');
+  });
+  const tile = page.locator('.tile').first();
+  const play = page.locator('[data-act="rhythm"]');
+  const indicator = page.locator('#rhythm-indicator');
+  const readPattern = () => page.evaluate(() => LumiApp.game.rounds[LumiApp.game.idx].rhythm);
+  const pattern = await readPattern();
+  await expect(tile).toBeDisabled();
+  await play.click();
+  await expect(play).toBeDisabled();
+  await expect(indicator).toHaveText(pattern[0] === '1' ? '●' : '–');
+  await page.clock.runFor(3100);
+  await expect(tile).toBeEnabled();
+  await play.click();
+  expect(await readPattern()).toBe(pattern);
+  await page.clock.runFor(3100);
+
+  for (let round = 0; round < 3; round++) {
+    if (round) {
+      await play.click();
+      await page.clock.runFor(3100);
+    }
+    const index = await page.evaluate(() => LumiApp.game.rounds[LumiApp.game.idx].choices.findIndex(c => c.ok));
+    await page.locator('.tile').nth(index).click();
+    await page.clock.runFor(950);
+  }
+  await expect(page.locator('.result3')).toBeVisible();
+  expect(await page.evaluate(() => ({
+    age: Store.profile().age, plays: Skills.summary(Store.profile()).find(s => s.id === 'music.pattern').plays
+  }))).toEqual({ age: 8, plays: 1 });
+
+  const taps = () => page.evaluate(() => window.testRhythmTaps);
+  await page.evaluate(() => {
+    window.testRhythmTaps = 0;
+    Sound.tap = () => { window.testRhythmTaps++; };
+    LumiApp.startGame('music', 'rhythm');
+  });
+  await play.click();
+  await page.locator('[data-act="leave"]').click();
+  const before = await taps();
+  await page.clock.runFor(3100);
+  expect(await taps()).toBe(before);
+});
+
 test('le lot 3 permet de rejouer une mélodie et de répondre à une deuxième question de conte', async ({ page }) => {
   await page.clock.install();
   await openHome(page);

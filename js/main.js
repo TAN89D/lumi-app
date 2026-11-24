@@ -241,7 +241,8 @@
   const okBtn = (act, dis) => `<button class="okb" id="okb" data-act="${act}" ${dis ? 'disabled' : ''} aria-label="${t('done')}">${IC.check}</button>`;
   const palette = () => `<div class="palette">${Object.values(V.colors).map(c => c.hex).concat(['#ffffff']).map((h, i) => `<button class="pal ${i === 0 ? 'on' : ''}" data-act="pal" data-c="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}</div>`;
   function body(r) {
-    if (r.type === 'choose') return `${r.show ? `<div class="show">${r.show}</div>` : ''}<div class="tiles t${r.choices.length}">${r.choices.map((c, i) => `<button class="tile" data-act="pick" data-i="${i}">${c.h}</button>`).join('')}</div>`;
+    if (r.type === 'choose') return `${r.show ? `<div class="show">${r.show}</div>` : ''}${r.rhythm ? rhythmControls() : ''}
+      <div class="tiles t${r.choices.length}">${r.choices.map((c, i) => `<button class="tile" data-act="pick" data-i="${i}" ${r.rhythm && !r.rhythmReady ? 'disabled' : ''}>${c.h}</button>`).join('')}</div>`;
     if (r.type === 'drag') {
       const slots = r.scene ? `<div class="dz scene">${r.slots.map(s => `<div class="slot pos" data-key="${s.key}" style="${s.pos}">${s.h}</div>`).join('')}</div>`
         : `<div class="dz">${r.slots.map(s => s.zone ? `<div class="slot zone ${r.z3 ? 'z3' : ''}" data-key="${s.key}"><div class="zl">${s.h}</div><div class="in"></div></div>` : `<div class="slot" data-key="${s.key}">${s.h}</div>`).join('')}</div>`;
@@ -289,7 +290,7 @@
     const r = cur(), first = G.fresh; G.fresh = false;
     if (r.type === 'story' && G.quizOn) { if (G.quizNew) { G.quizNew = false; setTimeout(() => { if (S.screen === 'play' && G && G.quizOn) say(quizLine()); }, 350); } }
     else if (r.type === 'story') { if (first || G.pgChanged) { G.pgChanged = false; setTimeout(() => say(storyLine(r.story, G.pg || 0)), 300); } }
-    else if (first) setTimeout(() => say(r.ask), 350);
+    else if (first) setTimeout(() => { if (onRound(r) && !r.rhythmPlaying && !modalOpen()) say(r.ask); }, 350);
     if (r.type === 'fill') { G.put = new Set(); paintFill(); }
     if (r.type === 'swap') initSwap();
     if (r.type === 'trace' || r.type === 'free') initCanvas(r.type);
@@ -302,7 +303,7 @@
   function armNudge() {
     clearTimeout(nudgeT);
     if (S.screen !== 'play' || !G || ['story', 'free', 'xylo', 'drum', 'color'].includes(cur().type)) return;
-    let n = 0; const tick = () => { if (S.screen !== 'play' || modalOpen()) return; const a = document.getElementById('ask'); if (a) { a.classList.add('pulse'); setTimeout(() => a.classList.remove('pulse'), 2500); } say(cur().ask); if (++n < 2) nudgeT = setTimeout(tick, 12000); };
+    let n = 0; const tick = () => { if (S.screen !== 'play' || modalOpen() || cur().rhythmPlaying) return; const a = document.getElementById('ask'); if (a) { a.classList.add('pulse'); setTimeout(() => a.classList.remove('pulse'), 2500); } say(cur().ask); if (++n < 2) nudgeT = setTimeout(tick, 12000); };
     nudgeT = setTimeout(tick, 12000);
   }
   const hooks = {
@@ -344,7 +345,7 @@
   const praise = () => { const l = I18n.pickLine('praise'); toast(l.text, true); say(l); };
 
   function pickTile(el) {
-    const r = cur(); if (r.locked) return;
+    const r = cur(); if (r.locked || (r.rhythm && !r.rhythmReady)) return;
     const c = r.choices[+el.dataset.i];
     mascots.g?.set(c.ok ? 'happy' : 'oops', c.ok ? 900 : 1500);
     if (c.ok) { r.locked = true; el.classList.add('good'); Sound.good(); const l = I18n.pickLine('praise'); toast(l.text, true); say(c.say || l); roundDone(); }
@@ -444,6 +445,45 @@
     return { cov: body ? cov / body : 0, ratio: body ? ink / body : 9 };
   }
   // ---- musique ----
+  const rhythmControls = () => `<div class="rhythm-tools">
+    <span class="rhythm-indicator" id="rhythm-indicator" aria-hidden="true">·</span>
+    <button class="btn sun" data-act="rhythm">${t('music.rhythm.play')}</button>
+    <small>${t('music.rhythm.legend')}</small>
+  </div>`;
+  function playRhythm() {
+    const r = cur();
+    if (!r.rhythm || r.locked || r.rhythmPlaying || modalOpen()) return;
+    Sound.stop();
+    r.rhythmPlaying = true;
+    r.rhythmReady = false;
+    const play = $app.querySelector('[data-act="rhythm"]');
+    const indicator = document.getElementById('rhythm-indicator');
+    const choices = $app.querySelectorAll('.tile');
+    play.disabled = true;
+    choices.forEach(choice => { choice.disabled = true; });
+
+    function step(index) {
+      const active = onRound(r) && indicator.isConnected;
+      const done = index === r.rhythm.length;
+      if (!active || modalOpen() || done) {
+        r.rhythmPlaying = false;
+        r.rhythmReady = active && !modalOpen() && done;
+        if (active) {
+          indicator.textContent = '·';
+          indicator.classList.remove('rhythm-hit');
+          play.disabled = false;
+          choices.forEach(choice => { choice.disabled = !r.rhythmReady; });
+        }
+        return;
+      }
+      const hit = r.rhythm[index] === '1';
+      indicator.textContent = hit ? '●' : '–';
+      indicator.classList.toggle('rhythm-hit', hit);
+      if (hit) Sound.tap();
+      setTimeout(() => step(index + 1), 500);
+    }
+    step(0);
+  }
   const flashBar = i => { const b = document.querySelector(`.bar[data-note="${i}"]`); if (b) { b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 220); } };
   const onRound = r => S.screen === 'play' && cur() === r;
   function paintMelody(r) {
@@ -581,7 +621,8 @@
       SES = { list: plan, i: 0, recent: [], voyage: g.id }; startGame(plan[0][0], plan[0][1]);
     },
     snext() { if (!SES || SES.i + 1 >= SES.list.length) { SES = null; go('home'); return; } SES.i++; const [c, g] = SES.list[SES.i]; startGame(c, g, { age: Rules.adaptAge(P().age, SES.recent) }); },
-    say() { const r = cur(); if (!r) return; if (r.type === 'story') say(storyLine(r.story, G.pg || 0)); else { say(r.ask); if (r.type === 'melody') playMelody(); armNudge(); } },
+    say() { const r = cur(); if (!r || r.rhythmPlaying) return; if (r.type === 'story') say(storyLine(r.story, G.pg || 0)); else { say(r.ask); if (r.type === 'melody') playMelody(); armNudge(); } },
+    rhythm() { playRhythm(); },
     note(el) { pressNote(+el.dataset.note); },
     melody() { playMelody(); },
     leave() { if (G && G.idx > 0) confirmBox(t('quit'), () => { hideModal(); go('cat', { id: G.cat }); }); else go('cat', { id: G.cat }); },
