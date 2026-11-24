@@ -55,19 +55,21 @@
   let mascots = {};
   function mountMascots() {
     if (!window.Mascot) return;
-    Mascot.destroyAll(); mascots = {};
-    document.querySelectorAll('.mascot-slot').forEach(el => {
-      const st = el.dataset.state || 'rest', c = Mascot.mount(el, { state: st }); if (!c) return;
-      if (st === 'wave') c.set('wave', 3200); else if (st === 'cheer') c.set('cheer', 4500);
-      mascots[(el.className.match(/\b([wrbq])-lumi\b/) || [])[1] || 'x'] = c;
+    Object.values(mascots).forEach(c => c.destroy()); mascots = {};
+    $app.querySelectorAll('.mascot-slot').forEach(el => {
+      const st = el.dataset.state || 'rest', entrance = st === 'wave' || st === 'cheer';
+      const c = Mascot.mount(el, { state: entrance ? 'rest' : st });
+      if (entrance) c.set(st, st === 'wave' ? 2400 : 1800);
+      mascots[(el.className.match(/\b([wrbqg])-lumi\b/) || [])[1] || 'x'] = c;
     });
     if (Sound.speaking && Sound.speaking()) Object.values(mascots).forEach(c => c.setSpeaking(true));
   }
   const tabsHTML = () => Home.nav(homeCtx(), Home.activeTab(S.screen));   // barre à 4 onglets (voir home.js)
   const say = l => Sound.speak(l);
   if (window.Mascot) Mascot.bindSpeech(Sound);
-  const showModal = h => { $modal.innerHTML = h; $modal.setAttribute('role', 'dialog'); $modal.setAttribute('aria-modal', 'true'); };
-  const hideModal = () => { $modal.innerHTML = ''; };
+  let modalMascot = null;
+  const showModal = h => { hideModal(); $modal.innerHTML = h; $modal.setAttribute('role', 'dialog'); $modal.setAttribute('aria-modal', 'true'); };
+  const hideModal = () => { modalMascot?.destroy(); modalMascot = null; $modal.innerHTML = ''; };
   const modalOpen = () => $modal.innerHTML !== '';
   const fb = document.createElement('div'); fb.className = 'fb'; fb.setAttribute('role', 'status'); fb.setAttribute('aria-live', 'polite'); document.body.appendChild(fb);
   let fbT; function toast(msg, ok) { fb.textContent = msg; fb.className = 'fb on' + (ok ? '' : ' no'); clearTimeout(fbT); fbT = setTimeout(() => { fb.className = 'fb'; }, 1100); }
@@ -336,6 +338,7 @@
   function pickTile(el) {
     const r = cur(); if (r.locked) return;
     const c = r.choices[+el.dataset.i];
+    mascots.g?.set(c.ok ? 'happy' : 'oops', c.ok ? 900 : 1500);
     if (c.ok) { r.locked = true; el.classList.add('good'); Sound.good(); const l = I18n.pickLine('praise'); toast(l.text, true); say(c.say || l); roundDone(); }
     else {
       G.err++; r.wrong = (r.wrong || 0) + 1; el.classList.add('bad'); wrongMsg(); armNudge();
@@ -699,7 +702,8 @@
     if (ls.lock) { Sound.stop(); hideModal(); go('lock'); }
     else if (ls.breakDue && !modalOpen()) {
       Sound.stop();
-      showModal(`<div class="dlg"><div style="width:110px;height:110px;margin:0 auto">${dr('lion')}</div><h1>${t('pause')}</h1><div class="btns"><button style="background:var(--turq)" data-act="go" data-to="home" aria-label="${t('pauseHome')}">${IC.home}</button><button style="background:var(--violet)" data-act="stay" aria-label="${t('pauseKeep')}">${IC.play}</button></div></div>`);
+      showModal(`<div class="dlg"><div class="pause-lumi" aria-hidden="true">${window.Mascot ? '' : dr('lion')}</div><h1>${t('pause')}</h1><div class="btns"><button style="background:var(--turq)" data-act="go" data-to="home" aria-label="${t('pauseHome')}">${IC.home}</button><button style="background:var(--violet)" data-act="stay" aria-label="${t('pauseKeep')}">${IC.play}</button></div></div>`);
+      if (window.Mascot) modalMascot = Mascot.mount($modal.querySelector('.pause-lumi'), { state: 'pause' });
       say(line('pause'));
     }
   }, 5000);

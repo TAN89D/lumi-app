@@ -73,6 +73,22 @@ window.Games = (function () {
     const w = y.word, first = w[0].toUpperCase(), pool = 'ABCDEFGHIJKLMNOPRSTUVZ'.split('').filter(c => c !== first);
     return { type: 'choose', ask: line('ask.missing'), show: `<span class="it">${dr(y.key)}</span><div class="word">_${w.slice(1)}</div>`, choices: shuffle(shuffle(pool).slice(0, nch(n, ctx) - 1).concat([first])).map(c => ({ h: c, ok: c === first })) };
   });
+  // Les choix reprennent le même son initial : l'enfant doit lire la syllabe entière.
+  const SYLLABLES = {
+    fr: [['moto', 'mo', 'ma', 'mi', 'mu'], ['lapin', 'la', 'le', 'li', 'lo'],
+      ['bateau', 'ba', 'bo', 'bi', 'bu'], ['tomate', 'to', 'ta', 'ti', 'tu'],
+      ['vélo', 'vé', 'va', 'vi', 'vo'], ['pirate', 'pi', 'pa', 'po', 'pu']],
+    en: [['robot', 'ro', 'ra', 're', 'ru'], ['tiger', 'ti', 'ta', 'to', 'tu'],
+      ['piano', 'pi', 'pa', 'po', 'pu'], ['zebra', 'ze', 'za', 'zi', 'zo'],
+      ['music', 'mu', 'ma', 'me', 'mo'], ['hotel', 'ho', 'ha', 'he', 'hi']]
+  };
+  const syllables = (n, ctx) => shuffle(SYLLABLES[I18n.lang()]).slice(0, 4).map(([word, first, ...distractors]) => ({
+    type: 'choose',
+    ask: line('ask.syllable', { word, id: word }),
+    show: `<div class="word">${word}</div>`,
+    choices: shuffle([first, ...shuffle(distractors).slice(0, nch(n, ctx) - 1)])
+      .map(syllable => ({ h: syllable, ok: syllable === first }))
+  }));
   const numseqG = (n, ctx) => [0, 1, 2, 3].map(() => {
     const step = pick(ctx && ctx.age >= 7 ? [2, 3, 5, 10] : [1, 2, 5, 10]), a = between(0, 10) * (step >= 5 ? 1 : 1), seq = [0, 1, 2, 3].map(i => a + i * step), res = a + 4 * step;
     return { type: 'choose', ask: line('ask.numseq'), show: seq.map(x => `<span class="it num">${x}</span>`).join('') + '<span class="q">?</span>', choices: numTiles(res, nch(n, ctx), Math.max(0, res - 3 * step), res + 3 * step, step) };
@@ -162,7 +178,7 @@ window.Games = (function () {
   // lvl : niveau d'âge minimal conseillé (3, 4 ou 5) ; skills : voir skills.js
   const G = (id, ic, make, lvl) => ({ id, ic, make, lvl: lvl || 3 });
   const CATS = [
-    { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4), G('missing', 'lion', missingG, 6)] },
+    { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4), G('missing', 'lion', missingG, 6), G('syllables', 'c_letters', syllables, 5)] },
     { id: 'numbers', c: 'sun', art: 'c_numbers', games: [G('count', 'mango', counting), G('match', 'mango', qtyMatch), G('basket', 'basket', fill), G('plus', 'apple', plus, 5), G('trace', 'c_art', traceN, 4),
       G('add', 'apple', addG, 6), G('sub', 'banana', subG, 6), G('compare', 'star', compareG, 6), G('tables', 'coconut', tablesG, 7), G('money', 'sun', moneyG, 7), G('clock', 'sun', clockG, 7)] },
     { id: 'colors', c: 'coral', art: 'c_colors', games: [G('touch', 'c_colors', colourTouch), G('sort', 'leaf', colourSort, 4), G('mix', 'fish', colourMix, 5)] },

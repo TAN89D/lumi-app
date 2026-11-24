@@ -321,7 +321,7 @@
     const scripts = [...document.scripts].map(s => s.getAttribute('src')).filter(x => x && x.startsWith('../js/')).map(x => x.replace('../', ''));
     const idx = await (await fetch('../index.html', { cache: 'no-store' })).text(); const idxScripts = [...idx.matchAll(/src="(js\/[^"]+)"/g)].map(m => m[1]);
     ok(idxScripts.every(s => files.includes(s)) && files.includes('css/lumi2.css'), 'tout script appelé par index.html est dans la liste du cache');
-    ok(/const VERSION = '3-[2-9]-\d+'/.test(swText), 'la version du cache est incrémentée (3-2-x)');
+    ok(/const VERSION = '4-\d+-\d+-lot\d+'/.test(swText), 'la version du cache est incrémentée (V4)');
     ok(/new Request\(f, \{ cache: 'reload' \}\)/.test(swText) && /LEGACY = \/\^lumi-v/.test(swText) && /req\.url\.indexOf\(SCOPE\) !== 0/.test(swText), 'installation sans cache HTTP périmé ; anciens caches LUMI ciblés ; requêtes hors de LUMI ignorées');
     ok(/k\.indexOf\(PREFIX\) === 0 && k !== CACHE\) \|\| LEGACY\.test\(k\)/.test(swText), 'seuls les caches de LUMI (préfixe + anciens noms) sont supprimés');
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -336,7 +336,7 @@
       const keys = await caches.keys(), mine = keys.filter(k => k.indexOf('lumi-app::') === 0);
       ok(keys.includes('autre-app-cache-v1'), 'le cache d’une autre application du domaine n’est PAS supprimé');
       ok(!keys.includes('lumi-v24'), 'l’ancien cache de LUMI est supprimé');
-      ok(mine.length === 1 && /::3-[2-9]-\d+$/.test(mine[0]), 'un seul cache LUMI courant, nommé avec l’adresse et la version');
+      ok(mine.length === 1 && /::4-\d+-\d+-lot\d+$/.test(mine[0]), 'un seul cache LUMI courant, nommé avec l’adresse et la version');
       const cache = await caches.open(mine[0]); const cached = await Promise.all(files.map(f => cache.match(new Request('../' + (f === './' ? '' : f)), { ignoreSearch: true }).then(x => !!x)));
       ok(cached.every(Boolean), 'tous les fichiers sont présents dans le cache (le jeu démarre sans connexion)', files.filter((f, i) => !cached[i]).join(', '));
       await caches.delete('autre-app-cache-v1'); await reg.unregister(); for (const k of await caches.keys()) if (k.indexOf('lumi-app::') === 0 && k.indexOf(location.origin) >= 0) await caches.delete(k);
@@ -441,8 +441,8 @@
     group('V3.4 — mascotte Lumi (vectorielle, animable, repli statique)');
     const holder = document.createElement('div'); document.body.appendChild(holder);
     const mc = Mascot.mount(holder, { state: 'rest' }), parts = ['l-body', 'l-head', 'l-ear-l', 'l-ear-r', 'l-lid', 'l-arm-l', 'l-arm-r', 'm-rest', 'm-talk', 'm-happy', 'm-oops'];
-    ok(Mascot.STATES.join() === 'rest,wave,talk,happy,oops,cheer' && parts.every(c => holder.querySelector('.' + c)) && !holder.querySelector('image,img'), 'Lumi est un vrai personnage vectoriel : corps, tête, oreilles, paupières, deux pattes, quatre bouches (aucune photo)');
-    ok(Mascot.STATES.every(s => { mc.set(s); return mc.state === s; }) && (mc.set('inconnu'), mc.state === 'rest'), 'les six états (repos, salut, parole, bonne réponse, erreur, fête) sont réglables ; un état inconnu retombe au repos');
+    ok(Mascot.STATES.join() === 'rest,wave,talk,think,happy,oops,cheer,pause' && parts.every(c => holder.querySelector('.' + c)) && !holder.querySelector('image,img'), 'Lumi est un vrai personnage vectoriel : corps, tête, oreilles, paupières, deux pattes, quatre bouches (aucune photo)');
+    ok(Mascot.STATES.every(s => { mc.set(s); return mc.state === s; }) && (mc.set('inconnu'), mc.state === 'rest'), 'les huit états sont réglables ; un état inconnu retombe au repos');
     mc.set('happy', 60); await wait(160); ok(mc.state === 'rest', 'une pose temporaire (bonne réponse) revient d’elle-même au repos');
     mc.setSpeaking(true); const talkSt = mc.state, talkAttr = mc.el.getAttribute('data-speaking'); mc.setSpeaking(false); ok(talkSt === 'talk' && talkAttr === '1' && mc.state === 'rest', 'la bouche suit l’état de narration (parle / se tait)');
     mc.set('cheer'); mc.setSpeaking(true); ok(mc.state === 'cheer', 'une narration ne casse pas la pose de fête'); mc.setSpeaking(false);
@@ -503,7 +503,7 @@
       Object.assign(sx, keepV); speechSynthesis.speak = oSp; speechSynthesis.getVoices = oGv; window.SpeechSynthesisUtterance = oUt; Sound.refresh();
       Sound.stop = oStop;
       const swT = await (await fetch('../sw.js', { cache: 'no-store' })).text();
-      ok(swT.indexOf("'js/mascot.js'") >= 0 && swT.indexOf("'js/story-quiz.js'") >= 0 && /const VERSION = '3-[4-9]-/.test(swT), 'mascotte et questions sont dans le cache hors ligne (version 3-x)');
+      ok(swT.indexOf("'js/mascot.js'") >= 0 && swT.indexOf("'js/story-quiz.js'") >= 0 && /const VERSION = '4-/.test(swT), 'mascotte et questions sont dans le cache hors ligne (V4)');
       const old = JSON.parse(snap4); P4.progress = old.progress; P4.rewards = old.rewards; P4.storiesRead = old.storiesRead; P4.skills = old.skills; P4.recre = old.recre; P4.age = old.age; P4.playTime = old.playTime; Store.save(); A4.go('home');
     } else ok(false, 'application non chargée dans la page de test');
 
@@ -529,7 +529,7 @@
     group('V3.5 — lecteur de planches d’animation (personnages 3D à venir)');
     ok(Sprite.parseName('lumi-wave-4x2.png').frames === 8 && Sprite.parseName('x-6x1.webp').cols === 6 && Sprite.parseName('sans-grille.png') === null, 'le nom d’une planche donne sa grille (4x2 = 8 images)');
     ok(Sprite.frame(0, 4, 2).x === 0 && Sprite.frame(3, 4, 2).x === 100 && Sprite.frame(4, 4, 2).y === 100 && Sprite.frame(5, 4, 2).x > 30 && Sprite.frame(5, 4, 2).x < 40, 'position exacte de chaque image dans la planche');
-    const spH = document.createElement('div'); document.body.appendChild(spH); spH.innerHTML = Sprite.html({ src: 'data:image/png;base64,AAAA', cols: 2, rows: 2, fps: 40, label: 'Test' }); const spE = spH.firstChild, spC = Sprite.play(spE); await wait(150); const moved = +spE.dataset.i; spC.stop();
+    const spH = document.createElement('div'); document.body.appendChild(spH); spH.innerHTML = Sprite.html({ src: 'data:image/png;base64,AAAA', cols: 2, rows: 2, fps: 40, loop: false, label: 'Test' }); const spE = spH.firstChild, spC = Sprite.play(spE); await wait(150); const moved = +spE.dataset.i; spC.stop();
     ok(moved > 0 && spE.getAttribute('role') === 'img' && spE.getAttribute('aria-label') === 'Test', 'la planche s’anime (images qui défilent) et reste accessible');
     const oMM2 = window.matchMedia; window.matchMedia = () => ({ matches: true }); const spE2 = document.createElement('span'); spE2.className = 'sprite'; Object.assign(spE2.dataset, { cols: 2, rows: 2, frames: 4, fps: 40, loop: 1 }); spH.appendChild(spE2); Sprite.play(spE2); await wait(150); const frozen = +spE2.dataset.i; window.matchMedia = oMM2; spH.remove();
     ok(frozen === 0, 'animations réduites ou mode calme : seule la première image est affichée (image fixe)');
