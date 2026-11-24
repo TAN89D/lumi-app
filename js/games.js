@@ -116,6 +116,28 @@ window.Games = (function () {
           say: { id: I18n.lang() + ':word.' + word, text: word } }))
     };
   });
+  const RHYMES = {
+    fr: [[['chat', '🐱'], ['rat', '🐀']], [['bateau', '⛵'], ['château', '🏰']],
+      [['mouton', '🐑'], ['bouton', '🔘']], [['lapin', '🐇'], ['sapin', '🌲']]],
+    en: [[['cat', '🐱'], ['hat', '🎩']], [['boat', '⛵'], ['goat', '🐐']],
+      [['mouse', '🐭'], ['house', '🏠']], [['moon', '🌙'], ['spoon', '🥄']]]
+  };
+  const rhymeWord = ([word, picture]) => `<span class="rhyme-word"><span class="rhyme-picture" aria-hidden="true">${picture}</span><span>${word}</span></span>`;
+  const rhymeGame = (n, ctx) => {
+    const pairs = RHYMES[I18n.lang()];
+    const answers = pairs.map(([, answer]) => answer);
+    return shuffle(pairs).map(([target, answer]) => {
+      const choices = shuffle(others(answers, answer, nch(n, ctx)));
+      const options = choices.map(([word]) => word);
+      return {
+        type: 'choose', ask: line('ask.rhyme', { word: target[0], id: target[0] }),
+        show: rhymeWord(target),
+        listen: line('rhyme.options', { words: options.join(', '), id: options.join('-') }),
+        choices: choices.map(item => ({ h: rhymeWord(item), ok: item === answer,
+          say: line('rhyme.correct', { word: target[0], answer: answer[0], id: target[0] }) }))
+      };
+    });
+  };
   const numseqG = (n, ctx) => [0, 1, 2, 3].map(() => {
     const step = pick(ctx && ctx.age >= 7 ? [2, 3, 5, 10] : [1, 2, 5, 10]), a = between(0, 10) * (step >= 5 ? 1 : 1), seq = [0, 1, 2, 3].map(i => a + i * step), res = a + 4 * step;
     return { type: 'choose', ask: line('ask.numseq'), show: seq.map(x => `<span class="it num">${x}</span>`).join('') + '<span class="q">?</span>', choices: numTiles(res, nch(n, ctx), Math.max(0, res - 3 * step), res + 3 * step, step) };
@@ -161,6 +183,27 @@ window.Games = (function () {
     type: 'choose', ask: line('ask.shape.find', { s: t('v.shape.' + s), id: s }),
     choices: shuffle(others(Object.keys(L.shapes), s, Math.max(n, 3))).map(k => ({ h: Art.shape(k, pick(COLS)), ok: k === s, say: line('say.shape', { s: t('v.shape.' + s), id: s }) }))
   }));
+  const shapeColor = (n, ctx) => shuffle(Object.keys(L.shapes)).map(shape => {
+    const colors = Object.keys(V.colors);
+    const color = pick(colors);
+    const otherColor = pick(colors.filter(c => c !== color));
+    const otherShape = pick(Object.keys(L.shapes).filter(s => s !== shape));
+    const figure = (s, c) => {
+      const { hex, pat } = V.colors[c];
+      const label = t('shapeColor.label', { shape: t('v.shape.' + s), color: t('v.color.' + c) });
+      return `<span class="shape-color" role="img" aria-label="${label}">${Art.shape(s, hex, pat)}</span>`;
+    };
+    const k = nch(n, ctx);
+    const wrong = shuffle([[shape, otherColor], [otherShape, color]]).concat([[otherShape, otherColor]]);
+    return {
+      type: 'choose',
+      ask: line('ask.shapeColor', { shape: t('v.shape.' + shape), color: t('v.color.' + color), id: shape + '-' + color }),
+      show: `<span class="shape-color-target">${figure(shape, color)}</span>`,
+      choices: shuffle([[shape, color], ...wrong.slice(0, k - 1)]).map(([s, c]) => ({
+        h: figure(s, c), ok: s === shape && c === color
+      }))
+    };
+  });
   function symmetry(n, ctx) {
     const half = ctx.age >= 8 ? 3 : 2;
     const rows = ctx.age >= 7 ? 3 : 2;
@@ -335,11 +378,11 @@ window.Games = (function () {
   // lvl : niveau d'âge minimal conseillé (3, 4 ou 5) ; skills : voir skills.js
   const G = (id, ic, make, lvl) => ({ id, ic, make, lvl: lvl || 3 });
   const CATS = [
-    { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4), G('missing', 'lion', missingG, 6), G('syllables', 'c_letters', syllables, 5), G('buildword', 'c_letters', buildWord, 6)] },
+    { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4), G('missing', 'lion', missingG, 6), G('syllables', 'c_letters', syllables, 5), G('buildword', 'c_letters', buildWord, 6), G('rhyme', 'c_letters', rhymeGame, 5)] },
     { id: 'numbers', c: 'sun', art: 'c_numbers', games: [G('count', 'mango', counting), G('match', 'mango', qtyMatch), G('basket', 'basket', fill), G('plus', 'apple', plus, 5), G('trace', 'c_art', traceN, 4),
       G('add', 'apple', addG, 6), G('sub', 'banana', subG, 6), G('compare', 'star', compareG, 6), G('tables', 'coconut', tablesG, 7), G('money', 'sun', moneyG, 7), G('clock', 'sun', clockG, 7)] },
     { id: 'colors', c: 'coral', art: 'c_colors', games: [G('touch', 'c_colors', colourTouch), G('sort', 'leaf', colourSort, 4), G('mix', 'fish', colourMix, 5)] },
-    { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind), G('symmetry', 'c_shapes', symmetry, 6)] },
+    { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind), G('symmetry', 'c_shapes', symmetry, 6), G('shapecolor', 'c_shapes', shapeColor, 4)] },
     { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6), G('sudoku', 'c_logic', sudoku, 7)] },
     { id: 'art', c: 'turq', art: 'c_art', games: [G('soleil', 'sun', tpl('soleil')), G('case', 'house', tpl('case')), G('poisson', 'fish', tpl('poisson')), G('baobab', 'tree', tpl('baobab')),
       G('free', 'c_art', () => [{ type: 'free', ask: line('ask.free') }])] },

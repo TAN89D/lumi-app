@@ -28,15 +28,16 @@ window.Art = (function () {
       <path d="M50 76 Q60 86 70 76" stroke="#3a1f1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
       <circle cx="40" cy="72" r="4" fill="#f0805a" opacity=".5"/><circle cx="80" cy="72" r="4" fill="#f0805a" opacity=".5"/></svg>`;
   }
-  function shape(type, fill) {
-    const f = fill || '#7a45c4', s = '#3a1f5c';
-    const body = {
+  function shape(type, fill, pat) {
+    const s = '#3a1f5c';
+    const body = f => ({
       circle: `<circle cx="50" cy="50" r="38" fill="${f}" stroke="${s}" stroke-width="4"/>`,
       square: `<rect x="14" y="14" width="72" height="72" rx="6" fill="${f}" stroke="${s}" stroke-width="4"/>`,
       triangle: `<path d="M50 10 L92 86 H8Z" fill="${f}" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>`,
       rectangle: `<rect x="6" y="26" width="88" height="48" rx="6" fill="${f}" stroke="${s}" stroke-width="4"/>`
-    }[type];
-    return `<svg viewBox="0 0 100 100" aria-hidden="true">${body}</svg>`;
+    }[type]);
+    const pattern = pat && colorPattern(pat);
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">${body(fill || '#7a45c4')}${pattern ? `<defs>${pattern.markup}</defs>${body(`url(#${pattern.id})`)}` : ''}</svg>`;
   }
   function star(on) { return `<span class="star ${on ? 'on' : ''}" aria-hidden="true">★</span>`; }
   function stars(n, max) { let s = ''; for (let i = 0; i < (max || 3); i++) s += star(i < n); return `<span class="stars" aria-label="${n} étoiles">${s}</span>`; }
@@ -73,7 +74,7 @@ window.Art = (function () {
   }
   /* ---- Couleurs : une pastille de couleur + un MOTIF (la couleur n'est jamais le seul indice) ---- */
   let pid = 0;
-  function swatch(hex, pat) {
+  function colorPattern(pat) {
     const id = 'sw' + (pid++), W = 'rgba(255,255,255,.5)';
     const P = {
       dots: `<pattern id="${id}" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="3.5" fill="${W}"/></pattern>`,
@@ -83,7 +84,11 @@ window.Art = (function () {
       cross: `<pattern id="${id}" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M9 3V15M3 9H15" stroke="${W}" stroke-width="3"/></pattern>`,
       diag: `<pattern id="${id}" width="14" height="14" patternUnits="userSpaceOnUse"><path d="M0 14L14 0" stroke="${W}" stroke-width="4"/></pattern>`
     }[pat] || '';
-    return `<svg viewBox="0 0 100 100" aria-hidden="true"><defs>${P}</defs><rect x="6" y="6" width="88" height="88" rx="22" fill="${hex}" stroke="rgba(0,0,0,.25)" stroke-width="3"/><rect x="6" y="6" width="88" height="88" rx="22" fill="url(#${id})"/></svg>`;
+    return { id, markup: P };
+  }
+  function swatch(hex, pat) {
+    const { id, markup } = colorPattern(pat);
+    return `<svg viewBox="0 0 100 100" aria-hidden="true"><defs>${markup}</defs><rect x="6" y="6" width="88" height="88" rx="22" fill="${hex}" stroke="rgba(0,0,0,.25)" stroke-width="3"/><rect x="6" y="6" width="88" height="88" rx="22" fill="url(#${id})"/></svg>`;
   }
   /* ---- Drapeaux d'Afrique de l'Ouest et centrale (bandes simples, dessinés ici) ---- */
   function starPath(cx, cy, R, r) {

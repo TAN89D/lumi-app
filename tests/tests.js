@@ -286,6 +286,34 @@
     const numberGames = Games.CATS.find(c => c.id === 'numbers').games;
     const mirrorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'symmetry');
     const inspect = document.createElement('div');
+    const rhymeGame = Games.CATS.find(c => c.id === 'letters').games.find(g => g.id === 'rhyme');
+    const shapeColorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'shapecolor');
+    for (const language of ['fr', 'en']) {
+      I18n.setLang(language);
+      const rhymeAnswers = language === 'fr' ? { chat: 'rat', bateau: 'château', mouton: 'bouton', lapin: 'sapin' }
+        : { cat: 'hat', boat: 'goat', mouse: 'house', moon: 'spoon' };
+      const textWord = html => { inspect.innerHTML = html; return inspect.querySelector('.rhyme-word > span:last-child').textContent; };
+      ok(rhymeGame.make(3, { age: 5 }).every(r => {
+        const correct = r.choices.filter(choice => choice.ok);
+        return correct.length === 1 && rhymeAnswers[textWord(r.show)] === textWord(correct[0].h)
+          && r.listen.text === r.choices.map(c => textWord(c.h)).join(', ') + '.';
+      }), 'rimes : une réponse attendue et lecture des choix dans l’ordre en ' + language);
+
+      ok(shapeColorGame.make(3, { age: 4 }).every(r => {
+        const figure = html => {
+          inspect.innerHTML = html;
+          const shape = inspect.querySelector('svg').firstElementChild;
+          return { type: shape.tagName + shape.getAttribute('width'), fill: shape.getAttribute('fill'), pattern: !!inspect.querySelector('pattern') };
+        };
+        const target = figure(r.show), correct = r.choices.filter(c => c.ok).map(c => figure(c.h));
+        const wrong = r.choices.filter(c => !c.ok).map(c => figure(c.h));
+        return target.pattern && correct.length === 1 && correct[0].type === target.type && correct[0].fill === target.fill
+          && wrong.every(c => c.pattern)
+          && wrong.some(c => c.type === target.type && c.fill !== target.fill)
+          && wrong.some(c => c.type !== target.type && c.fill === target.fill);
+      }), 'forme et couleur : motif redondant et distracteurs sur les deux critères en ' + language);
+    }
+    I18n.setLang('fr');
     const sudokuGame = Games.CATS.find(c => c.id === 'logic').games.find(g => g.id === 'sudoku');
     const chainGame = Games.CATS.find(c => c.id === 'nature').games.find(g => g.id === 'chain');
     for (const age of [7, 8]) {
