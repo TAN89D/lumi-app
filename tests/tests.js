@@ -282,6 +282,34 @@
       ok(bad.length === 0, `toutes les manches valides (${lg}, ${age} ans)`, bad.slice(0, 4).join(' | '));
     }
     I18n.setLang('fr');
+    group('V4 — le miroir et les calculs jusqu’à 100');
+    const numberGames = Games.CATS.find(c => c.id === 'numbers').games;
+    const mirrorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'symmetry');
+    const inspect = document.createElement('div');
+    for (const age of [6, 7, 8]) {
+      const max = Rules.caps(age).calcMax;
+      for (const id of ['add', 'sub']) {
+        const rounds = numberGames.find(g => g.id === id).make(3, { age });
+        ok(rounds.every((r, i) => {
+          const [, a, sign, b] = r.show.match(/>(\d+) ([+−]) (\d+) =/);
+          const result = sign === '+' ? +a + +b : +a - +b;
+          const ceiling = sign === '+' ? result : +a;
+          return ceiling <= max && (age < 8 || i < 2 || ceiling > 50)
+            && r.choices.filter(c => c.ok).map(c => +c.h).join() === String(result)
+            && r.choices.every(c => +c.h >= 0 && +c.h <= max);
+        }), id + ' : calcul et réponses cohérents à ' + age + ' ans');
+      }
+      ok(mirrorGame.make(3, { age }).every(r => {
+        inspect.innerHTML = r.show;
+        const target = inspect.querySelector('rect[fill="#ffc84a"]');
+        const axis = +inspect.querySelector('svg').getAttribute('viewBox').split(' ')[2] / 2;
+        const x = 2 * axis - (+target.getAttribute('x') + 20);
+        const y = +target.getAttribute('y') + 20;
+        const reflected = [...inspect.querySelectorAll('text')].find(el => +el.getAttribute('x') === x && +el.getAttribute('y') === y);
+        const correct = r.choices.filter(c => c.ok);
+        return correct.length === 1 && correct[0].h === reflected?.textContent;
+      }), 'le miroir reflète la case sur le même rang à ' + age + ' ans');
+    }
 
     // ============ 9. Voix et volume (synthèse simulée) ============
     group('Voix — volume, langue, absence de voix, enregistrements par identifiant');
