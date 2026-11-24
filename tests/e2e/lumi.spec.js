@@ -4,6 +4,20 @@ const { test, expect } = require('@playwright/test');
 // L'application s'ouvre sur l'écran de bienvenue ; « Commencer » mène à l'accueil.
 const openHome = async page => { await page.goto('/index.html'); await page.locator('[data-act="begin"]').click(); };
 
+test('Lumi salue à l’accueil et apparaît dans un jeu de glisser-déposer', async ({ page }) => {
+  await openHome(page);
+  const mascot = page.locator('.h-lumi .lumi');
+  await expect(mascot).toBeVisible();
+  const salute = page.getByRole('button', { name: 'Salue Lumi' });
+  await salute.scrollIntoViewIfNeeded();
+  await expect(mascot).toHaveAttribute('data-state', 'rest');
+  await salute.click();
+  await expect(mascot).toHaveAttribute('data-state', 'wave');
+  await page.evaluate(() => LumiApp.startGame('letters', 'drag'));
+  await expect(page.locator('.guide-compact .g-lumi .lumi')).toBeVisible();
+  await expect(page.locator('.drag').first()).toBeVisible();
+});
+
 test.beforeEach(async ({ page }) => {
   // Les parcours de jeu commencent après le report de l'installation de la PWA.
   await page.addInitScript(() => {

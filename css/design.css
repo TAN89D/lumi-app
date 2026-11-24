@@ -39,6 +39,9 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:34vh;backgr
 .h-welcome{position:relative;z-index:4;margin:-26px 14px 0;text-align:center;background:linear-gradient(#fffaf0,#ffeec8);border:3px solid #fff;border-radius:46px;padding:12px 20px 14px;box-shadow:0 7px 0 #d9b266,0 14px 22px rgba(0,0,0,.2)}
 .h-welcome b{display:block;font-size:clamp(1.5rem,7.4vw,2.3rem);color:var(--ink2);line-height:1.1}
 .h-welcome span{display:block;font-size:clamp(1rem,4.4vw,1.3rem);color:#6b3a86;font-weight:800;margin-top:2px}
+.h-welcome-lumi{display:grid;grid-template-columns:clamp(78px,25vw,120px) minmax(0,1fr);align-items:center;gap:10px;padding:10px 14px}
+.h-welcome-lumi .h-lumi{width:100%}
+.h-wave{min-height:44px;margin-top:8px;padding:6px 16px;border:2px solid #b285da;border-radius:24px;background:#fffaf0;color:var(--ink2);font-weight:800}
 .h-start{display:flex;align-items:center;justify-content:center;gap:14px;width:calc(100% - 28px);margin:18px 14px 0;padding:16px;border-radius:56px;background:linear-gradient(#6bdc3f,#2f9e1f);color:#fff;font:900 clamp(1.8rem,9vw,2.5rem)/1 var(--font);border:3px solid #c3f58a;box-shadow:inset 0 5px 0 rgba(255,255,255,.35),0 9px 0 #1f6b14,0 16px 22px rgba(0,0,0,.28);text-shadow:0 3px 0 rgba(0,0,0,.28);min-height:84px}
 .h-start .ic svg{width:46px;height:46px;color:#fff;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))}
 .h-start:active{transform:translateY(6px);box-shadow:inset 0 5px 0 rgba(255,255,255,.35),0 3px 0 #1f6b14}
@@ -370,6 +373,7 @@ body.contrast .logo-img{filter:none}
 /* LUMI V4 — réactions du guide et mouvements d'ambiance */
 .guide.guide-lumi{display:flex;align-items:center;gap:12px;min-height:0;margin:8px auto 12px}
 .guide-lumi .g-lumi{width:clamp(70px,22vw,108px)}
+.guide-compact .g-lumi{width:clamp(55px,16vw,75px)}
 .guide-lumi .bubble{position:relative;width:auto;flex:1;min-width:0}
 .pause-lumi{width:110px;margin:0 auto}
 .symmetry-grid{display:block;width:min(100%,380px);height:auto;color:#5a356e}
@@ -403,8 +407,10 @@ body.contrast .logo-img{filter:none}
 @keyframes lumi-yawn{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}
 @keyframes lumi-halo{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.65;transform:scale(1.13)}}
 @keyframes lumi-button-glow{0%,100%{opacity:0}50%{opacity:.65}}
+@keyframes lumi-home-wave{0%,100%{transform:translateY(0)}45%{transform:translateY(-6px)}}
 .dc-halo,.lumi .m-pause{transform-box:fill-box;transform-origin:center}
 @media (prefers-reduced-motion:no-preference){
+  body:not(.calm) .h-lumi .lumi[data-state=wave]{animation:lumi-home-wave .85s ease-in-out 3}
   body:not(.calm) .h-start{position:relative}
   body:not(.calm) .h-start::after{content:"";position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:0 0 18px 3px #ffdf75;animation:lumi-button-glow 3.2s ease-in-out 2}
   body:not(.calm) .lumi .l-thought{animation:lumi-glow 3.6s ease-in-out 2}

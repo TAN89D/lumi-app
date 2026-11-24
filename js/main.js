@@ -1,6 +1,6 @@
 // LUMI v3 : interface en panneaux de couleur, catégories libres, jeux variés, espace parent renforcé.
 (function () {
-  const APP_VERSION = '4.0.1';
+  const APP_VERSION = '4.0.2';
   const L = LUMI, C = L.config, CATS = Games.CATS, V = L.vocab;
   const $app = document.getElementById('app'), $modal = document.getElementById('modal');
   const t = (k, v) => I18n.t(k, v), line = (k, v) => I18n.line(k, v);
@@ -59,8 +59,8 @@
     $app.querySelectorAll('.mascot-slot').forEach(el => {
       const st = el.dataset.state || 'rest', entrance = st === 'wave' || st === 'cheer';
       const c = Mascot.mount(el, { state: entrance ? 'rest' : st });
-      if (entrance) c.set(st, st === 'wave' ? 2400 : 1800);
-      mascots[(el.className.match(/\b([wrbqg])-lumi\b/) || [])[1] || 'x'] = c;
+      if (entrance) c.set(st, st === 'wave' ? 3000 : 1800);
+      mascots[(el.className.match(/\b([hwrbqg])-lumi\b/) || [])[1] || 'x'] = c;
     });
     if (Sound.speaking && Sound.speaking()) Object.values(mascots).forEach(c => c.setSpeaking(true));
   }
@@ -236,7 +236,7 @@
   function playHTML() {
     const r = cur(), c = G.cd;
     return `<div class="play" style="--b:var(--${c.c});--bd:var(--${c.c}D)"><div class="ptop"><button class="ib" data-act="leave" aria-label="${t('close')}">${IC.close}</button><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="${G.rounds.length}" aria-valuenow="${G.idx}"><i style="width:${Math.round(G.idx / G.rounds.length * 100)}%"></i></div>${SES ? `<span class="sdots" role="img" aria-label="${t('ses.of', { a: SES.i + 1, b: SES.list.length })}">${SES.list.map((_, i) => `<i class="${i < SES.i ? 'done' : i === SES.i ? 'now' : ''}"></i>`).join('')}</span>` : ''}</div>
-      ${r.type === 'choose' ? Home.guide(homeCtx(), r.ask.text) : `<button class="ask" id="ask" data-act="say"><span class="spk">${IC.speaker}</span><span>${esc(r.ask.text)}</span></button>`}<div class="area">${body(r)}</div></div>`;
+      ${r.type === 'choose' || (r.type !== 'story' && window.Mascot) ? Home.guide(homeCtx(), r.ask.text, r.type !== 'choose') : `<button class="ask" id="ask" data-act="say"><span class="spk">${IC.speaker}</span><span>${esc(r.ask.text)}</span></button>`}<div class="area">${body(r)}</div></div>`;
   }
   const okBtn = (act, dis) => `<button class="okb" id="okb" data-act="${act}" ${dis ? 'disabled' : ''} aria-label="${t('done')}">${IC.check}</button>`;
   const palette = () => `<div class="palette">${Object.values(V.colors).map(c => c.hex).concat(['#ffffff']).map((h, i) => `<button class="pal ${i === 0 ? 'on' : ''}" data-act="pal" data-c="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}</div>`;
@@ -327,7 +327,7 @@
   };
 
   // ---- avancer / terminer ----
-  function roundDone() { const tk = G, ix = G.idx; setTimeout(() => { if (!G || G !== tk || G.idx !== ix || S.screen !== 'play') return; if (G.idx + 1 < G.rounds.length) { G.idx++; G.fresh = true; G.pg = 0; render(); } else finish(); }, 900); }
+  function roundDone() { mascots.g?.set('happy', 900); const tk = G, ix = G.idx; setTimeout(() => { if (!G || G !== tk || G.idx !== ix || S.screen !== 'play') return; if (G.idx + 1 < G.rounds.length) { G.idx++; G.fresh = true; G.pg = 0; render(); } else finish(); }, 900); }
   function finish() {
     const tt = G.err + G.hints, stars = G.free ? 3 : tt === 0 ? 3 : tt <= 2 ? 2 : 1;
     if (SES && SES.list[SES.i] && SES.list[SES.i][0] === G.cat && SES.list[SES.i][1] === G.gid) SES.recent.push(stars);
@@ -340,13 +340,12 @@
     p.recre = (p.recre || 0) + 1; Store.save(); G.recre = Store.s().minis && p.recre % 3 === 0;
     go('result');
   }
-  function wrongMsg() { Sound.soft(); const l = I18n.pickLine('tryAgain'); toast(l.text, false); say(l); }
+  function wrongMsg() { mascots.g?.set('oops', 1500); Sound.soft(); const l = I18n.pickLine('tryAgain'); toast(l.text, false); say(l); }
   const praise = () => { const l = I18n.pickLine('praise'); toast(l.text, true); say(l); };
 
   function pickTile(el) {
     const r = cur(); if (r.locked) return;
     const c = r.choices[+el.dataset.i];
-    mascots.g?.set(c.ok ? 'happy' : 'oops', c.ok ? 900 : 1500);
     if (c.ok) { r.locked = true; el.classList.add('good'); Sound.good(); const l = I18n.pickLine('praise'); toast(l.text, true); say(c.say || l); roundDone(); }
     else {
       G.err++; r.wrong = (r.wrong || 0) + 1; el.classList.add('bad'); wrongMsg(); armNudge();
@@ -636,6 +635,7 @@
     pickg(el) { const v = (el.dataset.k === 'vehicle' ? L.vehicles : L.pilots).find(x => x.e === el.dataset.e); if (totalStars() < v.need) { toast('★ ' + v.need, false); return; } P().garage = Object.assign(garage(), { [el.dataset.k]: v.e }); Store.save(); render(); },
     // -- profils --
     begin() { go('home'); },
+    'wave-lumi'() { mascots.h?.set('wave', 3000); say(line('hello')); },
     profiles() { go('profiles'); },
     ptab: el => { S.p.tab = el.dataset.tab; render(); },
     sstop() { Sound.stop(); },
