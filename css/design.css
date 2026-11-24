@@ -377,6 +377,12 @@ body.contrast .logo-img{filter:none}
 .melody-tools{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:14px}
 .melody-tools progress{width:min(100%,260px);height:14px;accent-color:var(--leafD)}
 .melody-tools .btn:disabled{opacity:.65}
+.rhythm-tools{display:flex;flex-direction:column;align-items:center;gap:.4rem;margin:0 0 12px;color:var(--ink2)}
+.rhythm-indicator{width:3.6rem;aspect-ratio:1;display:grid;place-items:center;border:3px solid currentColor;border-radius:50%;background:#fff6df;font-size:1.8rem;font-weight:900}
+.rhythm-pattern{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:.14em;font-size:clamp(.75rem,3.8vw,1.5rem)}
+.rhythm-beat{display:grid;place-items:center;min-width:.9em;aspect-ratio:1;border:1px solid currentColor;border-radius:4px;color:#482561}
+.rhythm-hit{background:#ffc84a;color:#482561}
+.tile:disabled:has(.rhythm-pattern),.rhythm-tools .btn:disabled{opacity:.68}
 .word-parts{display:flex;align-items:center;gap:.35em;color:var(--ink2)}
 .sudoku-grid{border-collapse:collapse;border:3px solid var(--ink2);color:var(--ink2);background:#fff6df}
 .sudoku-grid td{width:clamp(2.3rem,12vw,3.4rem);height:clamp(2.3rem,12vw,3.4rem);border:1px solid #77608a;text-align:center;font-size:1.5rem;font-weight:800}

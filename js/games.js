@@ -120,6 +120,28 @@ window.Games = (function () {
     const step = pick(ctx && ctx.age >= 7 ? [2, 3, 5, 10] : [1, 2, 5, 10]), a = between(0, 10) * (step >= 5 ? 1 : 1), seq = [0, 1, 2, 3].map(i => a + i * step), res = a + 4 * step;
     return { type: 'choose', ask: line('ask.numseq'), show: seq.map(x => `<span class="it num">${x}</span>`).join('') + '<span class="q">?</span>', choices: numTiles(res, nch(n, ctx), Math.max(0, res - 3 * step), res + 3 * step, step) };
   });
+  const RHYTHMS = {
+    4: ['1100', '1010', '1001', '0110', '0101', '0011'],
+    6: ['111000', '101010', '110010', '101100', '100101', '011010', '010101', '001110']
+  };
+  const rhythm = (n, ctx) => {
+    const short = shuffle(RHYTHMS[4]), long = shuffle(RHYTHMS[6]);
+    const rounds = ctx.age >= 8 ? long.slice(0, 3) : ctx.age === 7 ? [short[0], ...long.slice(0, 2)] : short.slice(0, 3);
+    return rounds.map(sequence => ({
+      type: 'choose',
+      ask: line('ask.rhythm'),
+      rhythm: sequence,
+      choices: shuffle(others(RHYTHMS[sequence.length], sequence, nch(n, ctx))).map(pattern => {
+        const beats = [...pattern];
+        const labels = beats.map(beat => t(beat === '1' ? 'music.hit' : 'music.rest'));
+        return {
+          ok: pattern === sequence,
+          h: `<span class="rhythm-pattern" role="img" aria-label="${labels.join(', ')}">${beats.map(beat =>
+            `<span aria-hidden="true" class="rhythm-beat${beat === '1' ? ' rhythm-hit' : ''}">${beat === '1' ? '●' : '–'}</span>`).join('')}</span>`
+        };
+      })
+    }));
+  };
   const CAPITALS = { mali: 'Bamako', senegal: 'Dakar', civ: 'Yamoussoukro', burkina: 'Ouagadougou', guinee: 'Conakry', ghana: 'Accra', nigeria: 'Abuja', cameroun: 'Yaoundé', niger: 'Niamey', benin: 'Porto-Novo' };
   const capitalsG = (n, ctx) => shuffle(Object.keys(CAPITALS)).slice(0, 4).map(id => ({
     type: 'choose', ask: line('ask.capital', { of: t('v.countryof.' + id), name: t('v.country.' + id) }), show: `<div class="flagbox">${Art.flag(V.countries[id].flag)}</div>`,
@@ -322,7 +344,7 @@ window.Games = (function () {
     { id: 'art', c: 'turq', art: 'c_art', games: [G('soleil', 'sun', tpl('soleil')), G('case', 'house', tpl('case')), G('poisson', 'fish', tpl('poisson')), G('baobab', 'tree', tpl('baobab')),
       G('free', 'c_art', () => [{ type: 'free', ask: line('ask.free') }])] },
     { id: 'music', c: 'violet', art: 'c_music', games: [G('xylo', 'c_music', () => [{ type: 'xylo', ask: line('ask.xylo') }]), G('drum', 'drum', () => [{ type: 'drum', ask: line('ask.drum') }]),
-      G('melody', 'star', (n, ctx) => cap(ctx).melody.map(len => ({ type: 'melody', len, ask: line('ask.melody') })), 4)] },
+      G('melody', 'star', (n, ctx) => cap(ctx).melody.map(len => ({ type: 'melody', len, ask: line('ask.melody') })), 4), G('rhythm', 'drum', rhythm, 6)] },
     { id: 'countries', c: 'coral', art: 'c_countries', games: [G('flags', 'c_countries', flags, 4), G('memory', 'star', memory('flag', 3), 4), G('capitals', 'c_countries', capitalsG, 7)] },
     { id: 'nature', c: 'leaf', art: 'c_nature', games: [G('animals', 'elephant', animals), G('habitat', 'parrot', habitat, 4), G('memory', 'monkey', memory('draw', 4), 4),
       G('plants', 'leaf', science('plants'), 5), G('water', 'water', science('water'), 6), G('chain', 'leaf', foodChain, 6)] },
