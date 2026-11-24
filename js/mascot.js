@@ -7,32 +7,39 @@ window.Mascot = (function () {
   const STATES = ['rest', 'wave', 'talk', 'happy', 'oops', 'cheer'];
   const INK = '#5a2a12', GOLD = '#ffc84a', MANE = '#b8631f', CREAM = '#fff0c8', EAR = '#e9a23a', SHIRT = '#e4572e';
 
-  function manePuffs() {
+  let uidN = 0;
+  function manePuffs(u) {
     let s = '';
-    for (let i = 0; i < 14; i++) { const a = i * 2 * Math.PI / 14; s += `<circle cx="${(100 + 47 * Math.cos(a)).toFixed(1)}" cy="${(96 + 45 * Math.sin(a)).toFixed(1)}" r="17" fill="${MANE}"/>`; }
+    for (let i = 0; i < 14; i++) { const a = i * 2 * Math.PI / 14; s += `<circle cx="${(100 + 47 * Math.cos(a)).toFixed(1)}" cy="${(96 + 45 * Math.sin(a)).toFixed(1)}" r="17" fill="url(#${u}m)"/>`; }
     return s;
   }
   // Une patte : épaule en haut de l'élément (le CSS tourne autour de ce point), manche à motif, patte dorée avec petits doigts.
-  const arm = side => `<g class="l-arm l-arm-${side}"><rect x="-9" y="0" width="18" height="38" rx="9" fill="${SHIRT}"/><rect x="-9" y="14" width="18" height="6" fill="#ffd23f"/><rect x="-6" y="30" width="12" height="30" rx="6" fill="${GOLD}"/>
-    <circle cx="0" cy="62" r="11" fill="${GOLD}" stroke="${INK}" stroke-width="2"/><path d="M-4 66v-5M0 67v-6M4 66v-5" stroke="${EAR}" stroke-width="1.6" stroke-linecap="round"/></g>`;
+  const arm = (side, u) => `<g class="l-arm l-arm-${side}"><rect x="-9" y="0" width="18" height="38" rx="9" fill="url(#${u}f)"/><rect x="-6" y="30" width="12" height="30" rx="6" fill="url(#${u}f)"/>
+    <circle cx="0" cy="62" r="11" fill="url(#${u}f)" stroke="${INK}" stroke-width="2"/><ellipse cx="-3" cy="58" rx="3.5" ry="2.4" fill="#fff" opacity=".45"/><path d="M-4 66v-5M0 67v-6M4 66v-5" stroke="${EAR}" stroke-width="1.6" stroke-linecap="round"/></g>`;
 
   // uid : évite les doublons d'identifiants si plusieurs Lumi sont affichés ensemble
   function markup(state) {
-    const st = STATES.includes(state) ? state : 'rest';
+    const st = STATES.includes(state) ? state : 'rest', u = 'lm' + (uidN++) + '-';
     return `<svg class="lumi" viewBox="0 0 200 230" role="img" aria-label="Lumi" data-state="${st}" data-speaking="0" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="${u}f" cx=".38" cy=".3" r=".85"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".55" stop-color="${GOLD}"/><stop offset="1" stop-color="#e29a2c"/></radialGradient>
+        <radialGradient id="${u}m" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#d98a3a"/><stop offset=".6" stop-color="${MANE}"/><stop offset="1" stop-color="#8f4a14"/></radialGradient>
+        <linearGradient id="${u}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4724a"/><stop offset="1" stop-color="#c63f1c"/></linearGradient></defs>
+      <ellipse cx="100" cy="226" rx="58" ry="7" fill="#000" opacity=".18"/>
       <g class="l-body">
-        <path d="M54 232C52 192 64 158 100 158S148 192 146 232z" fill="${SHIRT}"/>
-        <path d="M70 188l8-12 8 12zM88 188l8-12 8 12zM106 188l8-12 8 12zM124 188l-8-12 8-12z" fill="#ffd23f" opacity=".95"/>
-        <path d="M66 204h68v10H66z" fill="#2f7de1"/><path d="M72 214l6-8 6 8zM90 214l6-8 6 8zM108 214l6-8 6 8zM122 214l6-8 6 8z" fill="#3fae49"/>
-        <g transform="translate(62 168)">${arm('l')}</g><g transform="translate(138 168)">${arm('r')}</g>
+        <path d="M150 218C178 214 186 190 174 172" stroke="#e29a2c" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M171 152C160 158 160 180 172 186 186 182 190 162 180 150z" fill="url(#${u}m)"/>
+        <path d="M54 232C52 192 64 158 100 158S148 192 146 232z" fill="url(#${u}f)"/>
+        <path d="M66 226C62 196 72 168 90 160L101 200 94 226z" fill="#ffcf3f" stroke="#d93a2b" stroke-width="3.5" stroke-linejoin="round"/><path d="M134 226C138 196 128 168 110 160L99 200 106 226z" fill="#ffcf3f" stroke="#d93a2b" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M72 200l9-14 9 14zM80 220l8-12 8 12z" fill="#2f7de1"/><path d="M84 186l8-13 8 13z" fill="#d93a2b"/><path d="M126 200l-9-14-9 14zM120 220l-8-12-8 12z" fill="#3fae49"/><path d="M116 186l-8-13-8 13z" fill="#2f7de1"/>
+        <path d="M60 232V210h80v22z" fill="#ffd23f"/><path d="M60 210h80" stroke="#e0a81a" stroke-width="3"/><path d="M100 210v22" stroke="#e0a81a" stroke-width="2"/>
+        <g transform="translate(62 168)">${arm('l', u)}</g><g transform="translate(138 168)">${arm('r', u)}</g>
       </g>
       <g class="l-head">
-        ${manePuffs()}
-        <g class="l-ear l-ear-l"><circle cx="62" cy="58" r="17" fill="${GOLD}"/><circle cx="62" cy="58" r="8" fill="${EAR}"/></g>
-        <g class="l-ear l-ear-r"><circle cx="138" cy="58" r="17" fill="${GOLD}"/><circle cx="138" cy="58" r="8" fill="${EAR}"/></g>
-        <circle cx="100" cy="98" r="45" fill="${GOLD}"/>
-        <path d="M58 76q42-26 84 0l-4 12q-38-16-76 0z" fill="#e4572e"/><path d="M66 78l7-6 7 6zM92 72l8-7 8 7zM120 78l7-6 7 6z" fill="#ffd23f"/>
-        <ellipse cx="100" cy="118" rx="22" ry="16" fill="${CREAM}"/><path d="M93 106h14l-7 8z" fill="${INK}"/>
+        ${manePuffs(u)}
+        <g class="l-ear l-ear-l"><circle cx="62" cy="58" r="17" fill="url(#${u}f)"/><circle cx="62" cy="58" r="8" fill="${EAR}"/></g>
+        <g class="l-ear l-ear-r"><circle cx="138" cy="58" r="17" fill="url(#${u}f)"/><circle cx="138" cy="58" r="8" fill="${EAR}"/></g>
+        <circle cx="100" cy="98" r="45" fill="url(#${u}f)"/><path d="M70 78Q78 62 100 62Q84 68 76 84z" fill="#fff" opacity=".28"/>
+        <path d="M58 76q42-26 84 0l-4 12q-38-16-76 0z" fill="#d93a2b"/><path d="M64 79l7-6 7 6z" fill="#ffd23f"/><path d="M78 74l7-6 7 6z" fill="#3fae49"/><path d="M93 71l7-6 7 6z" fill="#2f7de1"/><path d="M108 72l7-6 7 6z" fill="#ffd23f"/><path d="M122 77l7-6 7 6z" fill="#3fae49"/>
+        <ellipse cx="100" cy="118" rx="22" ry="16" fill="${CREAM}"/><ellipse cx="94" cy="111" rx="9" ry="4" fill="#fff" opacity=".4"/><path d="M93 106h14l-7 8z" fill="${INK}"/><ellipse cx="98" cy="108" rx="2.6" ry="1.2" fill="#fff" opacity=".55"/>
         <g class="l-brows"><path class="l-brow l-brow-l" d="M72 84q9-5 17 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/><path class="l-brow l-brow-r" d="M111 84q9-5 17 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/></g>
         <g class="l-eyes"><circle cx="82" cy="97" r="6.2" fill="${INK}"/><circle cx="118" cy="97" r="6.2" fill="${INK}"/><circle cx="84" cy="95" r="2" fill="#fff"/><circle cx="120" cy="95" r="2" fill="#fff"/>
           <rect class="l-lid" x="74" y="88" width="16" height="18" rx="8" fill="${GOLD}"/><rect class="l-lid" x="110" y="88" width="16" height="18" rx="8" fill="${GOLD}"/></g>

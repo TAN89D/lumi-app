@@ -38,6 +38,50 @@ window.Games = (function () {
       return { type: 'choose', ask: line('ask.plus', { a: mg(a), b: mg(b), na: a, nb: b }), show: `${mangoes(a)}<span class="op">+</span>${mangoes(b)}`, choices: shuffle(others(pool, k, n)).map(v => ({ h: String(v), ok: v === k, say: line('say.count', { m: mg(k), n: k }) })) };
     });
   };
+
+  // ---- V3.5 : jeux des paliers 6, 7 et 8 ans (mêmes types de manches que les autres jeux ; plafonds dans rules.js) ----
+  const cm = ctx => cap(ctx).calcMax || 20, nch = (n, ctx) => (n >= 3 ? (cap(ctx).choices || 3) : 2);
+  // valeurs proches de la bonne réponse (pas de doublon, jamais négatives), par pas de `step`
+  const nearby = (v, k, lo, hi, step) => { const s = new Set([v]); let g = 0; while (s.size < k && g++ < 80) { const c = v + between(1, 4) * step * (Math.random() < 0.5 ? -1 : 1); if (c >= lo && c <= hi) s.add(c); } for (let c = lo; s.size < k && c <= hi; c += step) s.add(c); return [...s]; };
+  const numTiles = (v, k, lo, hi, step) => shuffle(nearby(v, k, lo, hi, step || 1)).map(x => ({ h: String(x), ok: x === v }));
+  const calc = (a, b, sym, res, op, k, step) => ({ type: 'choose', ask: line('ask.calc', { a, b, op: t('op.' + op) }), show: `<div class="calc">${a} ${sym} ${b} = <span class="q">?</span></div>`, choices: numTiles(res, k, Math.max(0, res - 8 * (step || 1)), res + 8 * (step || 1), step) });
+  const addG = (n, ctx) => { const mx = Math.min(cm(ctx), 50); return [0, 1, 2, 3].map(() => { const a = between(2, mx - 2), b = between(1, Math.min(mx - a, mx > 20 ? 30 : 12)); return calc(a, b, '+', a + b, 'plus', nch(n, ctx)); }); };
+  const subG = (n, ctx) => { const mx = Math.min(cm(ctx), 50); return [0, 1, 2, 3].map(() => { const a = between(6, mx), b = between(1, Math.min(a - 1, mx > 20 ? 30 : 12)); return calc(a, b, '−', a - b, 'minus', nch(n, ctx)); }); };
+  const tablesG = (n, ctx) => [0, 1, 2, 3].map(() => { const a = pick(cap(ctx).tables || [2, 5, 10]), b = between(2, 10); return calc(a, b, '×', a * b, 'times', nch(n, ctx), a); });
+  const compareG = (n, ctx) => [0, 1, 2, 3].map((i) => {
+    const mx = cm(ctx), k = n >= 3 ? 3 : 2, set = new Set(); while (set.size < k) set.add(between(1, mx));
+    const vals = [...set], big = i % 2 === 0, tgt = big ? Math.max(...vals) : Math.min(...vals);
+    return { type: 'choose', ask: line(big ? 'ask.bigger' : 'ask.smaller'), choices: shuffle(vals).map(v => ({ h: String(v), ok: v === tgt })) };
+  });
+  const COINS = [5, 10, 25, 50, 100, 500];
+  const moneyG = (n, ctx) => [0, 1, 2].map(() => {
+    const cs = Array.from({ length: between(2, 4) }, () => pick(COINS.slice(0, 5))), sum = cs.reduce((a, b) => a + b, 0);
+    return { type: 'choose', ask: line('ask.money'), show: cs.map(c => `<span class="coin">${c}</span>`).join('<span class="op">+</span>'),
+      choices: shuffle(nearby(sum, nch(n, ctx), 5, sum + 60, 5)).map(v => ({ h: `<span class="tx">${v} F</span>`, ok: v === sum })) };
+  });
+  const clockSvg = (h, m) => { const ha = ((h % 12) + m / 60) * 30, ma = m * 6, p = (a, r) => [(50 + r * Math.sin(a * Math.PI / 180)).toFixed(1), (50 - r * Math.cos(a * Math.PI / 180)).toFixed(1)];
+    const ticks = Array.from({ length: 12 }, (_, i) => { const [x1, y1] = p(i * 30, 41), [x2, y2] = p(i * 30, 46); return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="#5a2a12" stroke-width="${i % 3 ? 1.5 : 3}" stroke-linecap="round"/>`; }).join('');
+    const [hx, hy] = p(ha, 24), [mx2, my2] = p(ma, 36);
+    return `<svg viewBox="0 0 100 100" class="clock"><circle cx="50" cy="50" r="48" fill="#fff6df" stroke="#b8631f" stroke-width="4"/>${ticks}<path d="M50 50L${hx} ${hy}" stroke="#e4572e" stroke-width="5" stroke-linecap="round"/><path d="M50 50L${mx2} ${my2}" stroke="#2f7de1" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="50" r="3.5" fill="#5a2a12"/></svg>`; };
+  const hhmm = (h, m) => (I18n.lang() === 'en' ? `${h}:${String(m).padStart(2, '0')}` : (m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`));
+  const clockG = (n, ctx) => [0, 1, 2, 3].map(() => {
+    const age = ctx && ctx.age, m = age >= 8 ? pick([0, 15, 30, 45]) : age >= 7 ? pick([0, 30]) : 0, h = between(1, 12), k = nch(n, ctx), opts = new Map([[hhmm(h, m), true]]);
+    let g = 0; while (opts.size < k && g++ < 40) { const hh = ((h - 1 + between(-2, 2) + 12) % 12) + 1, mm = Math.random() < 0.4 ? (m === 0 ? 30 : 0) : m; opts.set(hhmm(hh, mm), opts.get(hhmm(hh, mm)) || false); }
+    return { type: 'choose', ask: line('ask.clock'), show: `<div class="clockbox">${clockSvg(h, m)}</div>`, choices: shuffle([...opts.entries()]).map(([s, ok]) => ({ h: `<span class="tx">${s}</span>`, ok })) };
+  });
+  const missingG = (n, ctx) => shuffle(letters().filter(y => /^[A-Za-z]/.test(y.word))).slice(0, 4).map(y => {
+    const w = y.word, first = w[0].toUpperCase(), pool = 'ABCDEFGHIJKLMNOPRSTUVZ'.split('').filter(c => c !== first);
+    return { type: 'choose', ask: line('ask.missing'), show: `<span class="it">${dr(y.key)}</span><div class="word">_${w.slice(1)}</div>`, choices: shuffle(shuffle(pool).slice(0, nch(n, ctx) - 1).concat([first])).map(c => ({ h: c, ok: c === first })) };
+  });
+  const numseqG = (n, ctx) => [0, 1, 2, 3].map(() => {
+    const step = pick(ctx && ctx.age >= 7 ? [2, 3, 5, 10] : [1, 2, 5, 10]), a = between(0, 10) * (step >= 5 ? 1 : 1), seq = [0, 1, 2, 3].map(i => a + i * step), res = a + 4 * step;
+    return { type: 'choose', ask: line('ask.numseq'), show: seq.map(x => `<span class="it num">${x}</span>`).join('') + '<span class="q">?</span>', choices: numTiles(res, nch(n, ctx), Math.max(0, res - 3 * step), res + 3 * step, step) };
+  });
+  const CAPITALS = { mali: 'Bamako', senegal: 'Dakar', civ: 'Yamoussoukro', burkina: 'Ouagadougou', guinee: 'Conakry', ghana: 'Accra', nigeria: 'Abuja', cameroun: 'Yaoundé', niger: 'Niamey', benin: 'Porto-Novo' };
+  const capitalsG = (n, ctx) => shuffle(Object.keys(CAPITALS)).slice(0, 4).map(id => ({
+    type: 'choose', ask: line('ask.capital', { of: t('v.countryof.' + id), name: t('v.country.' + id) }), show: `<div class="flagbox">${Art.flag(V.countries[id].flag)}</div>`,
+    choices: shuffle(others(Object.keys(CAPITALS), id, nch(n, ctx))).map(c => ({ h: `<span class="tx">${CAPITALS[c]}</span>`, ok: c === id }))
+  }));
   const colourTouch = n => shuffle(Object.keys(V.colors)).slice(0, 4).map(id => ({
     type: 'choose', ask: line('ask.color.touch', { c: t('v.color.' + id), id }),
     choices: shuffle(others(Object.keys(V.colors), id, n)).map(c => ({ h: Art.swatch(V.colors[c].hex, V.colors[c].pat), ok: c === id, say: line('say.color', { c: t('v.color.' + id), id }) }))
@@ -118,16 +162,17 @@ window.Games = (function () {
   // lvl : niveau d'âge minimal conseillé (3, 4 ou 5) ; skills : voir skills.js
   const G = (id, ic, make, lvl) => ({ id, ic, make, lvl: lvl || 3 });
   const CATS = [
-    { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4)] },
-    { id: 'numbers', c: 'sun', art: 'c_numbers', games: [G('count', 'mango', counting), G('match', 'mango', qtyMatch), G('basket', 'basket', fill), G('plus', 'apple', plus, 5), G('trace', 'c_art', traceN, 4)] },
+    { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4), G('missing', 'lion', missingG, 6)] },
+    { id: 'numbers', c: 'sun', art: 'c_numbers', games: [G('count', 'mango', counting), G('match', 'mango', qtyMatch), G('basket', 'basket', fill), G('plus', 'apple', plus, 5), G('trace', 'c_art', traceN, 4),
+      G('add', 'apple', addG, 6), G('sub', 'banana', subG, 6), G('compare', 'star', compareG, 6), G('tables', 'coconut', tablesG, 7), G('money', 'sun', moneyG, 7), G('clock', 'sun', clockG, 7)] },
     { id: 'colors', c: 'coral', art: 'c_colors', games: [G('touch', 'c_colors', colourTouch), G('sort', 'leaf', colourSort, 4), G('mix', 'fish', colourMix, 5)] },
     { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind)] },
-    { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3))] },
+    { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6)] },
     { id: 'art', c: 'turq', art: 'c_art', games: [G('soleil', 'sun', tpl('soleil')), G('case', 'house', tpl('case')), G('poisson', 'fish', tpl('poisson')), G('baobab', 'tree', tpl('baobab')),
       G('free', 'c_art', () => [{ type: 'free', ask: line('ask.free') }])] },
     { id: 'music', c: 'violet', art: 'c_music', games: [G('xylo', 'c_music', () => [{ type: 'xylo', ask: line('ask.xylo') }]), G('drum', 'drum', () => [{ type: 'drum', ask: line('ask.drum') }]),
       G('melody', 'star', (n, ctx) => cap(ctx).melody.map(len => ({ type: 'melody', len, ask: line('ask.melody') })), 4)] },
-    { id: 'countries', c: 'coral', art: 'c_countries', games: [G('flags', 'c_countries', flags, 4), G('memory', 'star', memory('flag', 3), 4)] },
+    { id: 'countries', c: 'coral', art: 'c_countries', games: [G('flags', 'c_countries', flags, 4), G('memory', 'star', memory('flag', 3), 4), G('capitals', 'c_countries', capitalsG, 7)] },
     { id: 'nature', c: 'leaf', art: 'c_nature', games: [G('animals', 'elephant', animals), G('habitat', 'parrot', habitat, 4), G('memory', 'monkey', memory('draw', 4), 4)] },
     { id: 'stories', c: 'sun', art: 'c_stories', games: L.stories.map(s => ({ id: s.id, title: s.title, e: s.cover, lvl: 3, make: () => { const st = localStory(s); return [{ type: 'story', story: st, ask: { id: st.code + ':story.' + s.id + '.title', text: st.title, lang: st.speech } }]; } })) }
   ];

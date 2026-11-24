@@ -293,3 +293,76 @@ body.calm .q-ch.bad{animation:none}
 .tile .grp{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:center;width:100%;padding:6px}
 .tile .grp .it{display:block;width:38%;aspect-ratio:1}
 .tile .grp .it svg{width:100%;height:100%}
+
+
+/* =====================================================================
+   V3.5 — décors africains derrière TOUS les écrans + jeux 6-8 ans
+   ===================================================================== */
+@keyframes dc-drift{from{transform:translateX(-12vw)}to{transform:translateX(112vw)}}
+@keyframes dc-cloud{from{transform:translateX(0)}to{transform:translateX(14px)}}
+@keyframes dc-flame{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.12)}}
+#decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#decor .dc{position:absolute;left:0;width:100%;display:block}
+#decor .dc-ground{bottom:0;height:clamp(200px,44vh,520px)}
+#decor .dc-top{top:0;height:clamp(62px,11vh,120px)}
+#decor .dc-fly{position:absolute;font-size:24px;opacity:.85;animation:dc-drift 38s linear infinite}
+#decor .dc-fly.f1{top:16%;animation-duration:42s}
+#decor .dc-fly.f2{top:26%;animation-duration:58s;animation-delay:-20s}
+#decor .dc-cloud{animation:dc-cloud 9s ease-in-out infinite alternate}
+#decor .dc-fire{transform-box:fill-box;transform-origin:50% 100%;animation:dc-flame .7s ease-in-out infinite}
+body[data-decor]::after{display:none}
+body[data-sky=warm]{background:linear-gradient(#ffcf8f 0,#ffe6bd 36%,#f7d79c 100%) fixed}
+body[data-sky=violet]{background:linear-gradient(#b9a0ee 0,#dccffb 38%,#f3d9a8 100%) fixed}
+body[data-sky=sunset]{background:linear-gradient(#ff8f6b 0,#ffc58f 38%,#ffe2a8 100%) fixed}
+body[data-sky=dusk]{background:linear-gradient(#352a6b 0,#9a4f86 38%,#f0a36b 100%) fixed}
+body[data-sky=night]{background:linear-gradient(#0f1f4a 0,#27407a 50%,#3b5a8a 100%) fixed}
+body[data-sky=soft]{background:linear-gradient(#e6f4ff 0,#f4fbff 40%,#f6efd8 100%) fixed}
+body[data-sky=dusk] .pagehead h1,body[data-sky=night] .pagehead h1{color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+@media (prefers-reduced-motion:reduce){#decor .dc-fly,#decor .dc-cloud,#decor .dc-fire{animation:none!important}#decor .dc-fly{display:none}}
+body.calm #decor .dc-fly,body.calm #decor .dc-cloud,body.calm #decor .dc-fire{animation:none!important}body.calm #decor .dc-fly{display:none}
+body.contrast #decor{opacity:.3}
+@media (min-width:900px){#decor .dc-ground{height:clamp(240px,40vh,560px)}}
+
+/* jeux 6-8 ans */
+.calc{font-size:clamp(2.2rem,11vw,3.4rem);font-weight:900;color:var(--b);text-shadow:0 4px 0 rgba(0,0,0,.1);display:inline-block}
+.coin{display:inline-flex;width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a0,#d9a21b);border:4px solid #a8760f;box-shadow:0 4px 0 #7a540a;align-items:center;justify-content:center;font-weight:900;color:#5a3a05;font-size:1.05rem}
+.tile .tx,.tx{display:block;font-size:1.25rem;font-weight:900;line-height:1.1;padding:4px;overflow-wrap:anywhere;text-align:center;color:var(--ink2)}
+.clockbox{width:min(46vw,190px);height:min(46vw,190px);margin:0 auto}.clock{width:100%;height:100%}
+.word{font-size:clamp(2.4rem,12vw,3.6rem);font-weight:900;letter-spacing:.08em;color:var(--b);text-shadow:0 4px 0 rgba(0,0,0,.1)}
+.flagbox{width:min(40vw,150px);margin:0 auto}.flagbox svg{width:100%;height:auto;border-radius:10px;box-shadow:0 4px 0 rgba(0,0,0,.15)}
+.it.num{display:inline-block;width:auto;min-width:48px;padding:0 6px;font-size:clamp(1.8rem,9vw,2.6rem);font-weight:900;color:var(--b)}
+
+/* séance variée : petits points de progression à côté de la barre */
+.sdots{display:inline-flex;gap:5px;align-items:center;margin-left:8px}
+.sdots i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.7);border:2px solid #e3c7ff}
+.sdots i.done{background:#3fb52a;border-color:#2a8a1a}.sdots i.now{background:#ffd62e;border-color:#b8860b;transform:scale(1.25)}
+
+/* Le Voyage de Lumi */
+.voy-sub{margin:0 4px 10px;font-weight:800;color:var(--ink2);text-align:center}
+.voy-map{position:relative;display:flex;flex-direction:column;gap:6px;padding:6px 6px 14px}
+.voy-map::before{content:"";position:absolute;left:50%;top:20px;bottom:30px;border-left:6px dotted rgba(122,63,18,.55)}
+.voy-stop{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.voy-stop.r{flex-direction:row-reverse;text-align:right}
+.vs-btn{position:relative;width:92px;height:92px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff,#ffeec6);border:5px solid #fff;box-shadow:0 6px 0 #d9b266,0 12px 16px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;margin-left:6%}
+.voy-stop.r .vs-btn{margin-left:0;margin-right:6%}
+.vs-btn .vi{width:62px;height:62px;display:block}.vs-btn .vi svg{width:100%;height:100%}
+.vs-btn.got{background:radial-gradient(circle at 35% 30%,#fff9d0,#ffd62e);border-color:#fff3a6}
+.vs-btn .vk{position:absolute;right:-4px;top:-6px;width:30px;height:30px;border-radius:50%;background:#3fb52a;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #1f6b14}
+.vs-btn:active{transform:translateY(4px)}
+.vs-txt{display:block;flex:1;max-width:44%;color:var(--ink2);background:rgba(255,246,223,.9);border-radius:18px;padding:6px 10px;box-shadow:0 3px 0 #d9b266}
+.vs-txt b{display:block;font-size:1.05rem;line-height:1.15}.vs-txt small{font-weight:800;color:#6b4a2a}
+.h-voyage{display:flex;align-items:center;gap:14px;width:calc(100% - 28px);margin:18px 14px 0;padding:10px 18px;border-radius:44px;background:linear-gradient(#e9ccff,#cfa9f5);border:3px solid #fff;box-shadow:0 7px 0 #8a5fc4,0 14px 20px rgba(0,0,0,.18);text-align:left;color:#3a1a6b}
+.h-voyage .vc-i{width:58px;height:58px;flex:none}.h-voyage .vc-i svg{width:100%;height:100%}
+.h-voyage b{display:block;font-size:clamp(1.15rem,5.4vw,1.5rem)}.h-voyage small{font-weight:800}
+.h-voyage:active{transform:translateY(4px)}
+.newc.sticker{background:#fff9d0;border:3px solid #ffd62e}
+
+
+/* =====================================================================
+   V4 (intégration d'assets) — logo A validé : image + slogan en vrai texte
+   ===================================================================== */
+.logo.logo-wrap{font-size:inherit;line-height:0;letter-spacing:0;text-shadow:none;margin:0}
+.logo-img{display:block;width:min(74vw,380px);height:auto;margin:0 auto;filter:drop-shadow(0 6px 8px rgba(60,30,0,.25))}
+.w-logo .sign,.h-logo .sign{margin-top:-6px}
+.w-logo .logo-img{width:min(80vw,420px)}
+body.contrast .logo-img{filter:none}

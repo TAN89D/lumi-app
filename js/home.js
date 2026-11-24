@@ -4,6 +4,8 @@
 window.Home = (function () {
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const IMG = 'assets/img/';
+  // Logo A (identité validée) : image optimisée, accessible (alt « LUMI »), avec texte de secours ; le slogan n'est JAMAIS dans l'image.
+  const logo = () => `<h1 class="logo logo-wrap"><img class="logo-img" src="${IMG}logo-lumi-720.webp" srcset="${IMG}logo-lumi-480.webp 480w, ${IMG}logo-lumi-720.webp 720w" sizes="(max-width:520px) 74vw, 380px" width="720" height="496" alt="LUMI" decoding="async" fetchpriority="high" onerror="this.replaceWith(document.createTextNode('LUMI'))"></h1>`;
 
   // Avatar du profil : portraits illustrés pour Abdou et la fillette, dessin vectoriel pour les autres.
   function avatar(x, av) {
@@ -32,7 +34,7 @@ window.Home = (function () {
 
   // ----- écran de bienvenue (affiché une seule fois par ouverture de l'application) -----
   const welcome = x => `<div class="welcome">
-      <div class="w-logo"><h1 class="logo">LUMI</h1><div class="sign">${esc(x.t('tagline'))}</div></div>
+      <div class="w-logo">${logo()}<div class="sign">${esc(x.t('tagline'))}</div></div>
       <img class="w-chars" src="${IMG}hero-941.jpg" srcset="${IMG}hero-640.jpg 640w, ${IMG}hero-941.jpg 941w" sizes="(max-width:760px) 100vw, 760px" width="941" height="435" alt="" decoding="async" fetchpriority="high">
       <section class="w-msg">${x.mascot ? `<div class="mascot-slot w-lumi" data-state="wave" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : ''}<div class="w-txt"><b>${esc(x.t('welcome.title'))}</b><span>${esc(x.t('welcome.sub'))}</span></div></section>
       <button class="h-start" data-act="begin"><span class="ic">${x.IC.play}</span>${esc(x.t('btn.start'))}</button>
@@ -47,6 +49,12 @@ window.Home = (function () {
       <button class="h-btn cream slim" data-act="go" data-to="gate"><span class="ic">${x.IC.lock}</span>${esc(x.t('prof.manage'))}</button>
       <p class="pinfo"><span class="ic">i</span>${esc(x.t('prof.info'))}</p>`;
 
+  // ----- Le Voyage de Lumi : huit étapes (les huit mondes), un autocollant par étape terminée, dans l'ordre que l'on veut, sans classement -----
+  const voyage = x => `<div class="pagehead3 pg-prof"><button class="ib3" data-act="go" data-to="games" aria-label="${esc(x.t('back'))}">${x.IC.back}</button><h1>${esc(x.t('voy.title'))}</h1></div>
+      <p class="voy-sub">${esc(x.t('voy.sub'))} <b>${esc(x.t('voy.count', { n: x.stickers.length }))}</b></p>
+      <div class="voy-map">${x.groups.map((g, i) => `<div class="voy-stop ${i % 2 ? 'r' : ''}"><button class="vs-btn g-${g.id} ${x.stickers.includes(g.id) ? 'got' : ''}" data-act="vstop" data-id="${g.id}" aria-label="${esc(x.t('voy.start'))} : ${esc(x.t('grp.' + g.id))}${x.stickers.includes(g.id) ? ' ✔' : ''}"><span class="vi">${x.dr(g.art)}</span>${x.stickers.includes(g.id) ? '<span class="vk">★</span>' : ''}</button><div class="vs-txt"><b>${esc(x.t('grp.' + g.id))}</b><small>${esc(x.t(x.stickers.includes(g.id) ? 'voy.done' : 'voy.three'))}</small></div></div>`).join('')}</div>`;
+  const voyageCard = x => `<button class="h-voyage" data-act="go" data-to="voyage"><span class="vc-i">${x.dr('c_countries')}</span><span class="vc-t"><b>${esc(x.t('voy.title'))}</b><small>${esc(x.t('voy.count', { n: x.stickers.length }))}</small></span></button>`;
+
   // ----- accueil -----
   function home(x) {
     const p = x.profile, name = p.name ? esc(p.name) : esc(x.t('prof.default'));
@@ -56,7 +64,7 @@ window.Home = (function () {
           <button class="h-parents" data-act="go" data-to="gate" aria-label="${esc(x.t('btn.parentsArea'))}"><span class="ic">${x.IC.people}</span><span>${esc(x.t('btn.parents'))}</span></button>
           <button class="h-profile" data-act="profiles" aria-label="${esc(x.t('btn.profile'))}"><span class="av">${avatar(x, x.avatar)}</span><b>${name}</b><span class="caret">${x.IC.caret}</span></button>
         </div>
-        <div class="h-logo"><h1 class="logo">LUMI</h1><div class="sign">${esc(x.t('tagline'))}</div></div>
+        <div class="h-logo">${logo()}<div class="sign">${esc(x.t('tagline'))}</div></div>
         <div class="h-age" role="img" aria-label="${esc(x.t('p.age'))} : ${esc(x.t('badge.age', { n: p.age }))}"><b>${esc(x.t('badge.age', { n: p.age }))}</b></div>
         <img class="h-chars" src="${IMG}hero-941.jpg" srcset="${IMG}hero-640.jpg 640w, ${IMG}hero-941.jpg 941w" sizes="(max-width:760px) 100vw, 760px" width="941" height="435" alt="" decoding="async" fetchpriority="high">
       </section>
@@ -66,12 +74,12 @@ window.Home = (function () {
         <button class="h-btn purple" data-act="profiles"><span class="ic">${x.IC.person}</span>${esc(x.t('btn.profile'))}</button>
         <button class="h-btn cream" data-act="go" data-to="gate"><span class="ic">${x.IC.people}</span>${esc(x.t('btn.parentsArea'))}</button>
       </div>
-      ${mission(x)}${progress(x)}${catalog(x)}
+      ${mission(x)}${voyageCard(x)}${progress(x)}${catalog(x)}
     </div>`;
   }
 
   // ----- onglet « Jeux » : les huit mondes + la Récré -----
-  const games = x => `<div class="pagehead3"><h1>${esc(x.t('games.title'))}</h1></div>${catalog(x)}
+  const games = x => `<div class="pagehead3"><h1>${esc(x.t('games.title'))}</h1></div>${voyageCard(x)}${catalog(x)}
       <button class="gcat g-recre wide" data-act="go" data-to="recre"><span class="gl">${esc(x.t('recre'))}</span><span class="gp">${x.dr('c_recre')}</span></button>`;
 
   // ----- hub d'un monde (plusieurs catégories possibles : « Formes et logique », « Couleurs et dessin ») -----
@@ -98,7 +106,7 @@ window.Home = (function () {
     return `<nav class="nav4" aria-label="${esc(x.t('nav.label'))}">${tabs.map(([id, k, ic]) => `<button class="${active === id ? 'on' : ''}" data-act="go" data-to="${id}" ${active === id ? 'aria-current="page"' : ''}><span class="ni">${ic}</span><span class="nl">${esc(x.t(k))}</span></button>`).join('')}</nav>`;
   }
   // Quel onglet est actif selon l'écran affiché
-  const activeTab = screen => ({ home: 'home', games: 'games', grp: 'games', cat: 'games', recre: 'games', missions: 'games', garage: 'games', trophies: 'trophies', progress: 'progress' }[screen] || 'home');
+  const activeTab = screen => ({ home: 'home', games: 'games', grp: 'games', cat: 'games', recre: 'games', missions: 'games', garage: 'games', trophies: 'trophies', progress: 'progress', voyage: 'games' }[screen] || 'home');
 
   // ----- écran d'activité : personnage-guide + bulle de consigne (la vraie consigne, traduite) pour les exercices à choix -----
   const guide = (x, ask) => `<div class="guide"><img src="${IMG}guide-boy.jpg" width="540" height="490" alt="" decoding="async"><button class="bubble" data-act="say" aria-label="${esc(x.t('play'))}"><span class="spk">${x.IC.speaker}</span><span>${esc(ask)}</span></button></div>`;
@@ -107,7 +115,7 @@ window.Home = (function () {
   const result = (x, r) => `<div class="result3">${x.mascot ? `<div class="mascot-slot r-lumi" data-state="cheer" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : `<img class="lion3" src="${IMG}lion-cheer.jpg" width="550" height="402" alt="" decoding="async">`}
       <h1>${esc(r.name ? x.t('res.bravo', { name: r.name }) : x.t('res.bravo0'))}</h1><p class="sub">${esc(x.t('res.well'))}</p>
       <div class="big-stars" role="img" aria-label="${esc(x.t('res.stars', { n: r.stars }))}">${[0, 1, 2].map(i => `<span class="star ${i < r.stars ? 'on' : ''}" style="animation-delay:${i * 0.25}s">★</span>`).join('')}</div>
-      ${r.reward ? `<div class="newc"><div class="pic">${r.reward}</div><span>${esc(x.t('newReward'))}</span></div>` : ''}${r.recre || ''}
+      ${r.sticker ? `<div class="newc sticker"><div class="pic">${r.sticker}</div><span>${esc(x.t('voy.sticker'))}</span></div>` : ''}${r.reward ? `<div class="newc"><div class="pic">${r.reward}</div><span>${esc(x.t('newReward'))}</span></div>` : ''}${r.recre || ''}
       <button class="h-start cont" data-act="${r.nextAct}" ${r.nextData}>${esc(x.t('btn.continue'))}<span class="ic">${x.IC.play}</span></button>
       <div class="row3"><button class="ib" data-act="game" data-c="${r.cat}" data-g="${r.gid}" aria-label="${esc(x.t('replay'))}">${x.IC.replay}</button><button class="ib" data-act="go" data-to="home" aria-label="${esc(x.t('tab.home'))}">${x.IC.home}</button></div></div>`;
 
@@ -121,5 +129,5 @@ window.Home = (function () {
       <div class="q-choices c${qz.choices.length}" role="group" aria-label="${esc(qz.q)}">${qz.choices.map((c, i) => `<button class="q-ch" data-act="qpick" data-i="${i}"><span class="qe" aria-hidden="true">${c.e}</span><span class="ql">${esc(c.label)}</span></button>`).join('')}</div>
       <button class="q-skip" data-act="qskip">${esc(x.t('quiz.skip'))} ${x.IC.play}</button></div>`;
 
-  return { home, games, group, progressPage, nav, activeTab, avatar, welcome, profilesPage, guide, result, book, quiz };
+  return { home, games, group, progressPage, nav, activeTab, avatar, welcome, profilesPage, guide, result, book, quiz, voyage };
 })();

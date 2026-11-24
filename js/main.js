@@ -46,6 +46,7 @@
     $app.className = (NOTABS.includes(S.screen) ? 'noTabs' : '') + (S.screen === 'home' ? ' homeApp' : '') + (S.screen === 'welcome' ? ' homeApp welcomeApp' : '');
     $app.innerHTML = screens[S.screen]() + (NOTABS.includes(S.screen) ? '' : tabsHTML());
     mountMascots();
+    if (window.Decor) Decor.set(Decor.themeFor(S.screen, S.p, G));
     if (hooks[S.screen]) hooks[S.screen]();
   }
   // Lumi vectoriel : chaque emplacement .mascot-slot reçoit sa mascotte ; poses de fête et de salut puis retour au repos.
@@ -117,7 +118,7 @@
   }
   function homeCtx() {
     const p = P(), gs = GROUPS.reduce((a, g) => a + groupStars(g), 0), mx = GROUPS.reduce((a, g) => a + groupMax(g), 0);
-    return { t, dr, IC, art: Art, mascot: !!window.Mascot, profile: p, profiles: Store.profiles(), avatarOf, avatar: avatarOf(p.avatar), groups: GROUPS, cat, label: Games.label, gameName: Games.gameName, starRow, starsOf, groupStars, groupMax,
+    return { t, dr, IC, art: Art, mascot: !!window.Mascot, stickers: (Array.isArray(p.stickers) ? p.stickers : []), profile: p, profiles: Store.profiles(), avatarOf, avatar: avatarOf(p.avatar), groups: GROUPS, cat, label: Games.label, gameName: Games.gameName, starRow, starsOf, groupStars, groupMax,
       totalStars: totalStars(), pct: Math.round(gs / Math.max(1, mx) * 100), rewardsGot: p.rewards.filter(r => r.type === 'draw').length, rewardsMax: COLLECT.length, mission: missionInfo(),
       mastered: Skills.summary(p).filter(s => s.level === 2).map(s => t('skill.' + s.id)) };
   }
@@ -125,6 +126,7 @@
   // ================= ÉCRANS =================
   const screens = {
     welcome() { return Home.welcome(homeCtx()); },
+    voyage() { return Home.voyage(homeCtx()); },
     profiles() { return Home.profilesPage(homeCtx()); },
     home() { return Home.home(homeCtx()); },
     games() { return Home.games(homeCtx()); },
@@ -138,9 +140,10 @@
     play() { return playHTML(); },
     result() {
       const c = G.cd, rw = G.newReward, nxt = c.games[c.games.findIndex(g => g.id === G.gid) + 1];
+      const inS = !!(SES && SES.list[SES.i] && SES.list[SES.i][0] === G.cat && SES.list[SES.i][1] === G.gid), hasNext = inS && SES.i + 1 < SES.list.length;
       const recre = G.recre ? `<button class="recre" data-act="mission" data-m="${pick(L.missions).id}"><div class="pic">${dr('c_recre')}</div>${t('recreTour')}</button>` : '';
-      return `<div class="result result3-wrap" style="--b:var(--${c.c});--bd:var(--${c.c}D)">` + Home.result(homeCtx(), { name: P().name || '', stars: G.stars, reward: rw ? dr(rw) : '', recre,
-        nextAct: nxt ? 'game' : 'cat', nextData: `data-c="${G.cat}" data-g="${nxt ? nxt.id : ''}" data-id="${G.cat}"`, cat: G.cat, gid: G.gid }) + '</div>';
+      return `<div class="result result3-wrap" style="--b:var(--${c.c});--bd:var(--${c.c}D)">` + Home.result(homeCtx(), { name: P().name || '', stars: G.stars, reward: rw ? dr(rw) : '', sticker: G.newSticker ? dr(GROUPS.find(z => z.id === G.newSticker).art) : '', recre,
+        nextAct: inS ? (hasNext ? 'snext' : 'go') : nxt ? 'game' : 'cat', nextData: inS ? (hasNext ? '' : `data-to="${SES.voyage ? 'voyage' : 'home'}"`) : `data-c="${G.cat}" data-g="${nxt ? nxt.id : ''}" data-id="${G.cat}"`, cat: G.cat, gid: G.gid }) + '</div>';
     },
     trophies() {
       const have = P().rewards.filter(r => r.type === 'draw').map(r => r.item), p = P(), g = garage();
@@ -217,17 +220,18 @@
   }
 
   // ================= PARTIE =================
+  let SES = null;   // séance en cours (en mémoire seulement : rien n'est enregistré)
   const cur = () => G.rounds[G.idx];
   function startGame(cid, gid, opts) {
     if (checkLock()) return;
     const cd = cat(cid), gd = cd.games.find(g => g.id === gid), prev = starsOf(cid, gid);
-    G = { cat: cid, gid, cd, gd, prev, idx: 0, err: 0, hints: 0, rounds: gd.make(prev === 1 ? 2 : 3, { age: P().age, letter: opts && opts.letter }), fresh: true };
+    G = { cat: cid, gid, cd, gd, prev, idx: 0, err: 0, hints: 0, rounds: gd.make(prev === 1 ? 2 : 3, { age: (opts && opts.age) || P().age, letter: opts && opts.letter }), fresh: true };
     G.free = ['color', 'free', 'xylo', 'drum', 'story'].includes(G.rounds[0].type);
     go('play');
   }
   function playHTML() {
     const r = cur(), c = G.cd;
-    return `<div class="play" style="--b:var(--${c.c});--bd:var(--${c.c}D)"><div class="ptop"><button class="ib" data-act="leave" aria-label="${t('close')}">${IC.close}</button><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="${G.rounds.length}" aria-valuenow="${G.idx}"><i style="width:${Math.round(G.idx / G.rounds.length * 100)}%"></i></div></div>
+    return `<div class="play" style="--b:var(--${c.c});--bd:var(--${c.c}D)"><div class="ptop"><button class="ib" data-act="leave" aria-label="${t('close')}">${IC.close}</button><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="${G.rounds.length}" aria-valuenow="${G.idx}"><i style="width:${Math.round(G.idx / G.rounds.length * 100)}%"></i></div>${SES ? `<span class="sdots" role="img" aria-label="${t('ses.of', { a: SES.i + 1, b: SES.list.length })}">${SES.list.map((_, i) => `<i class="${i < SES.i ? 'done' : i === SES.i ? 'now' : ''}"></i>`).join('')}</span>` : ''}</div>
       ${r.type === 'choose' ? Home.guide(homeCtx(), r.ask.text) : `<button class="ask" id="ask" data-act="say"><span class="spk">${IC.speaker}</span><span>${esc(r.ask.text)}</span></button>`}<div class="area">${body(r)}</div></div>`;
   }
   const okBtn = (act, dis) => `<button class="okb" id="okb" data-act="${act}" ${dis ? 'disabled' : ''} aria-label="${t('done')}">${IC.check}</button>`;
@@ -314,9 +318,11 @@
   function roundDone() { const tk = G, ix = G.idx; setTimeout(() => { if (!G || G !== tk || G.idx !== ix || S.screen !== 'play') return; if (G.idx + 1 < G.rounds.length) { G.idx++; G.fresh = true; G.pg = 0; render(); } else finish(); }, 900); }
   function finish() {
     const tt = G.err + G.hints, stars = G.free ? 3 : tt === 0 ? 3 : tt <= 2 ? 2 : 1;
+    if (SES && SES.list[SES.i] && SES.list[SES.i][0] === G.cat && SES.list[SES.i][1] === G.gid) SES.recent.push(stars);
     const rec = Store.record('g:' + G.cat + ':' + G.gid, stars, G.err, G.hints), p = P();
     Skills.update(p, G.cat, G.gid, stars);   // compétences : suivi pédagogique, séparé des récompenses
-    G.stars = stars; G.newReward = null;
+    G.stars = stars; G.newReward = null; G.newSticker = null;
+    if (SES && SES.voyage && SES.i === SES.list.length - 1) { const sk = Array.isArray(p.stickers) ? p.stickers : (p.stickers = []); if (!sk.includes(SES.voyage)) { sk.push(SES.voyage); G.newSticker = SES.voyage; } }
     if (rec.first) { const n = p.rewards.filter(r => r.type === 'draw').length; if (n < COLLECT.length) { G.newReward = COLLECT[n]; Store.addReward('draw', COLLECT[n]); } }
     if (G.cat === 'stories' && !p.storiesRead.includes(G.gid)) p.storiesRead.push(G.gid);
     p.recre = (p.recre || 0) + 1; Store.save(); G.recre = Store.s().minis && p.recre % 3 === 0;
@@ -460,7 +466,7 @@
     const s = Store.s(), p = P(), pt = p.playTime || {}, days = Object.keys(pt).sort().slice(-7).reverse(), mins = x => t('p.min', { n: Math.round(x / 60) });
     const profs = Store.profiles().map((x, i) => `<div class="prof ${x.id === p.id ? 'on' : ''}"><div class="pav">${Art.child(avatarOf(x.avatar))}</div>
       <div class="pf"><input type="text" value="${esc(x.name)}" maxlength="20" placeholder="${t('p.name')}" data-chg="rename" data-id="${x.id}" aria-label="${t('p.name')}">
-      <select data-chg="age" data-id="${x.id}" aria-label="${t('p.age')}">${[3, 4, 5].map(a => `<option value="${a}" ${x.age === a ? 'selected' : ''}>${t('p.years', { n: a })}</option>`).join('')}</select></div>
+      <select data-chg="age" data-id="${x.id}" aria-label="${t('p.age')}">${[3, 4, 5, 6, 7, 8].map(a => `<option value="${a}" ${x.age === a ? 'selected' : ''}>${t('p.years', { n: a })}</option>`).join('')}</select></div>
       <div class="pb2">${x.id === p.id ? `<span class="tag">${t('p.active')}</span>` : `<button class="btn" data-act="switch" data-id="${x.id}">${IC.check}</button>`}<button class="btn warn" data-act="delprof" data-id="${x.id}" aria-label="${t('p.delete')}">${IC.close}</button></div></div>`).join('');
     const skills = Skills.summary(p).map(k => `<div class="bline"><span style="width:150px;font-size:.85rem">${t('skill.' + k.id)}${k.plays ? `<br><small>${t('sk.stats', { n: k.plays, d: k.days || 1 })}</small>` : ''}</span><div class="pbx"><i style="width:${Math.round(k.score * 100)}%"></i></div><span class="lv l${k.level}">${t('skill.level.' + k.level)}</span></div>`).join('');
     const adv = Skills.advice(p, p.age, CATS).map(a => { const sk = t('skill.' + a.skill), cg = a.game && cat(a.game[0]), gm = cg ? Games.gameName(cg, cg.games.find(g => g.id === a.game[1])) : '';
@@ -503,7 +509,7 @@
     showModal(`<div class="dlg" style="text-align:left"><h1>${t('p.addProfile')}</h1>
       <input type="text" id="np" maxlength="20" placeholder="${t('p.name')}" aria-label="${t('p.name')}" style="width:100%;font:inherit;padding:10px;border-radius:12px;border:2px solid #d9ceaa">
       <div class="avs">${L.avatars.map(a => `<button class="avb ${a.id === 'awa' ? 'on' : ''}" data-act="pickav" data-a="${a.id}" aria-label="${a.id}">${Art.child(a)}</button>`).join('')}</div>
-      <select id="na" aria-label="${t('p.age')}" style="width:100%;font:inherit;padding:10px;border-radius:12px;border:2px solid #d9ceaa">${[3, 4, 5].map(a => `<option value="${a}" ${a === 4 ? 'selected' : ''}>${t('p.years', { n: a })}</option>`).join('')}</select>
+      <select id="na" aria-label="${t('p.age')}" style="width:100%;font:inherit;padding:10px;border-radius:12px;border:2px solid #d9ceaa">${[3, 4, 5, 6, 7, 8].map(a => `<option value="${a}" ${a === 4 ? 'selected' : ''}>${t('p.years', { n: a })}</option>`).join('')}</select>
       <div class="btns"><button style="background:var(--leaf)" data-act="saveprof" aria-label="${t('done')}">${IC.check}</button><button style="background:var(--coral)" data-act="stay" aria-label="${t('close')}">${IC.close}</button></div></div>`);
   }
   function profilesModal() {
@@ -531,9 +537,20 @@
     go: el => { hideModal(); if (el.dataset.to === 'gate') openGate('parent'); else go(el.dataset.to); },
     cat: el => go('cat', { id: el.dataset.id }),
     grp: el => go('grp', { id: el.dataset.id }),
-    dmission() { if (checkLock()) return; const mi = missionInfo(); if (mi) startGame(mi.cat, mi.game, { letter: mi.letter }); },
-    game: el => { hideModal(); startGame(el.dataset.c, el.dataset.g); },
-    auto() { const tgt = Rules.nextGame(CATS, P().age, starsOf); startGame(tgt[0], tgt[1]); },   // le filtre d'âge reste actif même quand tout est terminé
+    dmission() { SES = null; if (checkLock()) return; const mi = missionInfo(); if (mi) startGame(mi.cat, mi.game, { letter: mi.letter }); },
+    game: el => { hideModal(); SES = null; startGame(el.dataset.c, el.dataset.g); },
+    // « Commencer » : séance variée de 5 activités de familles différentes (filtre d'âge toujours actif, limites de temps respectées par startGame)
+    auto() { const plan = Rules.sessionPlan(CATS, P().age, starsOf, null, 5), tgt = plan[0] || Rules.nextGame(CATS, P().age, starsOf); SES = plan.length ? { list: plan, i: 0, recent: [] } : null; startGame(tgt[0], tgt[1]); },
+    // Une étape du Voyage : mini-séance de 3 jeux DIFFÉRENTS du monde choisi (adaptés à l'âge) ; terminée, elle donne un autocollant.
+    vstop(el) {
+      const g = GROUPS.find(z => z.id === el.dataset.id); if (!g) return;
+      const age = P().age, list = [];
+      g.cats.map(cat).forEach(c => c.games.forEach(gm => { if ((gm.lvl || 3) <= age) list.push([c.id, gm.id, starsOf(c.id, gm.id)]); }));
+      const plan = list.map(x => [Math.random() + x[2], x]).sort((a, b) => a[0] - b[0]).map(x => [x[1][0], x[1][1]]).slice(0, 3);
+      if (!plan.length) { toast(t('voy.empty'), false); return; }
+      SES = { list: plan, i: 0, recent: [], voyage: g.id }; startGame(plan[0][0], plan[0][1]);
+    },
+    snext() { if (!SES || SES.i + 1 >= SES.list.length) { SES = null; go('home'); return; } SES.i++; const [c, g] = SES.list[SES.i]; startGame(c, g, { age: Rules.adaptAge(P().age, SES.recent) }); },
     say() { const r = cur(); if (!r) return; if (r.type === 'story') say(storyLine(r.story, G.pg || 0)); else { say(r.ask); if (r.type === 'melody') playMelody(); armNudge(); } },
     leave() { if (G && G.idx > 0) confirmBox(t('quit'), () => { hideModal(); go('cat', { id: G.cat }); }); else go('cat', { id: G.cat }); },
     yes() { const f = window._lumiYes; window._lumiYes = null; hideModal(); if (f) f(); },
@@ -722,6 +739,6 @@
   if (isMobile) setTimeout(() => { if (!deferred) showBar(); }, 3000);
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
-  window.LumiApp = { go, get screen() { return S.screen; }, get game() { return G; }, startGame, limitState, openGate };   // accès pour les tests
+  window.LumiApp = { go, get screen() { return S.screen; }, get game() { return G; }, startGame, limitState, openGate, finish };   // accès pour les tests
   if (!checkLock()) render();
 })();
