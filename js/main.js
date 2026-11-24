@@ -1,5 +1,6 @@
 // LUMI v3 : interface en panneaux de couleur, catégories libres, jeux variés, espace parent renforcé.
 (function () {
+  const APP_VERSION = '3.6.1';
   const L = LUMI, C = L.config, CATS = Games.CATS, V = L.vocab;
   const $app = document.getElementById('app'), $modal = document.getElementById('modal');
   const t = (k, v) => I18n.t(k, v), line = (k, v) => I18n.line(k, v);
@@ -40,7 +41,8 @@
   // ---- état ----
   let S = { screen: 'welcome', p: {} }, G = null, elapsed = 0, sinceBreak = 0, MH = null, lastTouch = Date.now(), nudgeT = null;
   const NOTABS = ['welcome', 'profiles', 'play', 'result', 'gate', 'parent', 'moto', 'course', 'lock'];
-  function go(screen, p) { S = { screen, p: p || {} }; render(); window.scrollTo(0, 0); }
+  let pendingReload = false;   // une nouvelle version est prête : on recharge au prochain retour à l'accueil
+  function go(screen, p) { if (pendingReload && ['home', 'games', 'progress', 'trophies', 'voyage'].includes(screen)) { pendingReload = false; location.reload(); return; } S = { screen, p: p || {} }; render(); window.scrollTo(0, 0); }
   function render() {
     Sound.stop(); clearTimeout(nudgeT);
     $app.className = (NOTABS.includes(S.screen) ? 'noTabs' : '') + (S.screen === 'home' ? ' homeApp' : '') + (S.screen === 'welcome' ? ' homeApp welcomeApp' : '');
@@ -495,7 +497,8 @@
         <button class="btn" data-act="testvoice">${t('p.testVoice')}</button><button class="btn sun" data-act="howinstall">${t('p.install')}</button>${sw('sfx', t('p.sfx'))}
         ${sel('textScale', [[1, '100 %'], [1.25, '125 %'], [1.5, '150 %']], s.textScale, t('p.textSize'))}${sw('big', t('p.bigButtons'))}${sw('calm', t('p.calm'))}${sw('contrast', t('p.contrast'))}${sw('minis', t('p.minis'))}</div>
       <div class="sec"><h2>${t('p.data')}</h2><p style="margin:0">${t('p.dataText')}</p><button class="btn" data-act="export">${t('p.export')}</button><button class="btn sun" data-act="import">${t('p.import')}</button><button class="btn warn" data-act="wipe">${t('p.wipe')}</button>
-        <input type="file" id="imp" accept="application/json,.json" hidden></div>`
+        <input type="file" id="imp" accept="application/json,.json" hidden></div>
+      <p class="note appver">LUMI · version ${APP_VERSION}</p>`
     };
     return `<div class="pagehead parenthead"><button class="ib" data-act="go" data-to="home" aria-label="${t('back')}">${IC.back}</button><h1>${t('p.title')}</h1></div>
       <div class="ptabs" role="tablist">${[['follow', 'pt.follow'], ['limits', 'pt.limits'], ['content', 'pt.content'], ['settings', 'pt.settings']].map(([id, k]) => `<button class="ptab ${tab === id ? 'on' : ''}" role="tab" aria-selected="${tab === id}" data-act="ptab" data-tab="${id}">${t(k)}</button>`).join('')}</div>${secs[tab]}`;
@@ -738,7 +741,16 @@
   document.addEventListener('pointerup', () => { if (deferred && !askedOnce && !dismissed() && !standalone) setTimeout(askInstall, 400); });
   if (isMobile) setTimeout(() => { if (!deferred) showBar(); }, 3000);
 
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  // Mises à jour : on redemande toujours le service worker au réseau (updateViaCache:'none') et, quand une nouvelle version prend la main,
+  // l'application se recharge UNE fois, jamais en plein jeu (elle attend le retour à l'accueil). Les données ne sont pas touchées.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    const hadCtl = !!navigator.serviceWorker.controller; let reloaded = false;
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => { try { r.update(); } catch (e) {} }).catch(() => {});
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadCtl || reloaded) return;
+      if (['welcome', 'home', 'games', 'progress', 'trophies', 'voyage', 'profiles'].includes(S.screen)) { reloaded = true; location.reload(); } else pendingReload = true;
+    });
+  }
   window.LumiApp = { go, get screen() { return S.screen; }, get game() { return G; }, startGame, limitState, openGate, finish };   // accès pour les tests
   if (!checkLock()) render();
 })();

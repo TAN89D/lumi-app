@@ -575,6 +575,11 @@
       I18n.setLang('en'); AV.go('welcome'); ok(/Learning by playing/.test(document.querySelector('.sign').textContent), 'slogan anglais sous le logo'); I18n.setLang('fr'); AV.go('home');
     }
 
+    group('V3.6.1 — mises à jour visibles');
+    const mainSrc = await (await fetch('../js/main.js', { cache: 'no-store' })).text();
+    ok(/updateViaCache: 'none'/.test(mainSrc) && /controllerchange/.test(mainSrc) && /pendingReload/.test(mainSrc), 'le service worker est redemandé au réseau et la nouvelle version se recharge d’elle-même (jamais en plein jeu)');
+    if (window.LumiApp) { LumiApp.go('parent'); document.querySelector('.ptab[data-tab="settings"]').click(); ok(/version \d+\.\d+/.test(document.querySelector('.appver').textContent), 'la version de LUMI est affichée dans l’espace parents (Paramètres)'); LumiApp.go('home'); }
+
     // ============ 11. Application ============
     group('Application — écrans');
     const A = window.LumiApp;
