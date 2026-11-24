@@ -94,6 +94,17 @@
     ({ S } = await freshStore({ 'lumi.v1': v1() }));
     r = S.importData(v2(), 'replace');
     ok(r.ok && Object.keys(S.data().profiles).length === 1 && S.data().profiles.p2 && !S.data().profiles.p1, 'le mode « remplacer » remplace');
+    const multi = JSON.parse(v1());
+    multi.v = 3;
+    multi.profiles.p1.stickers = ['letters'];
+    multi.profiles.p2 = Object.assign({}, JSON.parse(v2()).profiles.p2, { stickers: ['nature'] });
+    multi.active = 'p2';
+    r = S.importData(JSON.stringify(multi), 'replace');
+    ok(r.ok && S.profile().id === 'p2' && S.profile().age === 5, 'remplacement : le profil actif de la sauvegarde est restauré avec son âge');
+    multi.active = 'p1';
+    multi.profiles.p2.stickers.push('music');
+    r = S.importData(JSON.stringify(multi), 'merge');
+    ok(r.ok && S.profile().id === 'p2' && S.profile().stickers.join() === 'nature,music', 'fusion : les autocollants sont réunis sans doublons et le profil local reste actif');
 
     group('Import — atomicité : l’ancien état survit à un échec');
     let before;
