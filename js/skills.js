@@ -18,7 +18,7 @@ window.Skills = (function () {
     'logic:suite': ['logic.pattern'], 'logic:odd': ['logic.classify'], 'logic:puzzle': ['logic.spatial'], 'logic:memory': ['logic.memory'], 'logic:sudoku': ['logic.sudoku'],
     'art:soleil': ['art.create'], 'art:case': ['art.create'], 'art:poisson': ['art.create'], 'art:baobab': ['art.create'], 'art:free': ['art.create'],
     'music:xylo': ['music.rhythm'], 'music:drum': ['music.rhythm'], 'music:melody': ['music.rhythm', 'logic.memory'], 'music:rhythm': ['music.pattern'],
-    'countries:flags': ['world.geo'], 'countries:memory': ['world.geo', 'logic.memory'],
+    'countries:flags': ['world.geo'], 'countries:memory': ['world.geo', 'logic.memory'], 'countries:map': ['world.map'],
     'nature:animals': ['world.nature'], 'nature:habitat': ['world.nature', 'logic.classify'], 'nature:memory': ['world.nature', 'logic.memory'],
     'nature:plants': ['nature.plants'], 'nature:water': ['nature.water'], 'nature:chain': ['nature.chain']
   };

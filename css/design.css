@@ -390,6 +390,13 @@ body.contrast .logo-img{filter:none}
 .shape-color{display:block;width:clamp(48px,18vw,100px)}
 .shape-color svg{display:block;width:100%;height:auto}
 .shape-color-target{display:grid;place-items:center;width:clamp(90px,30vw,132px);aspect-ratio:1;background:#fff6df;border:2px dashed var(--violetD);border-radius:18px}
+.map-exercise{width:min(100%,375px);color:var(--ink2)}
+.africa-map{display:block;width:100%;height:auto;overflow:hidden;background:#c6ecfa;border:2px solid #52688a;border-radius:14px;fill:#f4e9c7;stroke:#735c4a;stroke-width:1;stroke-linejoin:round;fill-rule:evenodd}
+.africa-map .africa-map-target{fill:#ffd34f;stroke:#532750;stroke-width:2.5}
+.map-clue{margin:6px 0 0;background:#fff6df;border-radius:12px}
+.map-clue summary{padding:10px 12px;border-radius:12px;font-weight:800;cursor:pointer}
+.map-clue summary:focus-visible{outline-offset:-4px}
+.map-clue p{margin:0;padding:0 12px 10px}
 .sudoku-grid{border-collapse:collapse;border:3px solid var(--ink2);color:var(--ink2);background:#fff6df}
 .sudoku-grid td{width:clamp(2.3rem,12vw,3.4rem);height:clamp(2.3rem,12vw,3.4rem);border:1px solid #77608a;text-align:center;font-size:1.5rem;font-weight:800}
 .sudoku-grid td:nth-child(2){border-right:3px solid var(--ink2)}
