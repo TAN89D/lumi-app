@@ -27,6 +27,14 @@ window.StoryQuiz = (function () {
       ok: R('🐘', 'le petit éléphant', 'the little elephant', 'éléphant', 'elephant'), ko: [R('🐒', 'le singe', 'the monkey', 'singe', 'monkey'), R('🦁', 'le lion', 'the lion', 'lion', 'lion')] }
   };
   const ids = () => Object.keys(Q);
+  const FOLLOWUP = {
+    mangue: { fr: 'Pourquoi Abdou partage-t-il sa mangue avec Lumi ?', en: 'Why does Abdou share his mango with Lumi?',
+      ok: R('🦁', 'Parce que Lumi a faim', 'Because Lumi is hungry'), ko: [R('💤', 'Parce que Lumi veut dormir', 'Because Lumi wants to sleep'), R('🧺', 'Parce que Lumi va au marché', 'Because Lumi is going to the market')] },
+    pluie: { fr: 'Pourquoi les grenouilles ont-elles des flaques où sauter ?', en: 'Why are there puddles for the frogs to jump in?',
+      ok: R('🌧️', 'Parce qu’il a plu', 'Because it rained'), ko: [R('☀️', 'Parce que le soleil a brillé', 'Because the sun shone'), R('🌈', 'Parce qu’un arc-en-ciel est apparu', 'Because a rainbow appeared')] },
+    'awa-eau': { fr: 'Qu’est-ce qui remplit de nouveau la calebasse ?', en: 'What fills the calabash again?',
+      ok: R('🌧️', 'La pluie', 'The rain'), ko: [R('🐘', 'Le petit éléphant', 'The little elephant'), R('☀️', 'Le soleil', 'The sun')] }
+  };
   const has = id => !!Q[id];
   const lang = l => (l === 'en' ? 'en' : 'fr');
   const shuffle = (a, rnd) => { const r = rnd || Math.random, b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
@@ -35,7 +43,13 @@ window.StoryQuiz = (function () {
 
   // Fabrique une question prête à afficher : { id, q, choices:[{e, label, ok}], count }. rnd (facultatif) = générateur aléatoire (tests).
   function build(storyId, language, age, rnd) {
-    const d = Q[storyId]; if (!d) return null;
+    return question(Q[storyId], storyId, language, age, rnd);
+  }
+  function followup(storyId, language, age) {
+    return age >= 6 ? question(FOLLOWUP[storyId], storyId + '.followup', language, age) : null;
+  }
+  function question(d, storyId, language, age, rnd) {
+    if (!d) return null;
     const lg = lang(language), n = choiceCount(age), r = rnd || Math.random;
     const wrong = shuffle(d.ko, r).slice(0, n - 1);
     const choices = shuffle([Object.assign({ ok: true }, d.ok)].concat(wrong.map(w => Object.assign({ ok: false }, w))), r).map(c => ({ e: c.e, label: c[lg], ok: c.ok }));
@@ -46,5 +60,5 @@ window.StoryQuiz = (function () {
   // Pour les tests : textes d'une question dans une langue (sans tirage).
   const raw = (storyId, language) => { const d = Q[storyId], lg = lang(language); return d && { q: d[lg], ok: d.ok, ko: d.ko, kwOk: d.ok[lg === 'en' ? 'ken' : 'kfr'], kwKo: d.ko.map(k => k[lg === 'en' ? 'ken' : 'kfr']) }; };
 
-  return { ids, has, build, check, choiceCount, raw };
+  return { ids, has, build, followup, check, choiceCount, raw };
 })();
