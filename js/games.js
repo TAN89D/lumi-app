@@ -245,6 +245,20 @@ window.Games = (function () {
     });
   }
   const POOL = ['mango', 'banana', 'apple', 'coconut', 'fish', 'sun'];
+  const MAZES = [
+    ['S..##', '#...#', '###.#', '#...#', '#..E#'],
+    ['S...#', '.##.#', '...##', '##..#', '...E#'],
+    ['S..####', '##...##', '...#.##', '.###...', '.....#E'],
+    ['S..#...', '##.#.#.', '...#.#.', '.###.#.', '.....#.', '###.#..', '....#.E']
+  ];
+  const maze = (n, ctx) => {
+    const start = Math.min(2, Math.max(0, ctx.age - 5));
+    return MAZES.slice(start, start + 2).map(grid => ({
+      type: 'maze', ask: line('ask.maze'), grid,
+      goal: [grid.find(row => row.includes('E')).indexOf('E'), grid.findIndex(row => row.includes('E'))],
+      position: [0, 0]
+    }));
+  };
   const DIGITS = [1, 2, 3, 4];
   const SUDOKU = [0, 1, 2, 3, 2, 3, 0, 1, 1, 2, 3, 0, 3, 0, 1, 2];
   function sudoku(n, ctx) {
@@ -397,7 +411,7 @@ window.Games = (function () {
       G('add', 'apple', addG, 6), G('sub', 'banana', subG, 6), G('compare', 'star', compareG, 6), G('tables', 'coconut', tablesG, 7), G('money', 'sun', moneyG, 7), G('clock', 'sun', clockG, 7)] },
     { id: 'colors', c: 'coral', art: 'c_colors', games: [G('touch', 'c_colors', colourTouch), G('sort', 'leaf', colourSort, 4), G('mix', 'fish', colourMix, 5)] },
     { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind), G('symmetry', 'c_shapes', symmetry, 6), G('shapecolor', 'c_shapes', shapeColor, 4)] },
-    { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6), G('sudoku', 'c_logic', sudoku, 7)] },
+    { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6), G('sudoku', 'c_logic', sudoku, 7), G('maze', 'lion', maze, 5)] },
     { id: 'art', c: 'turq', art: 'c_art', games: [G('soleil', 'sun', tpl('soleil')), G('case', 'house', tpl('case')), G('poisson', 'fish', tpl('poisson')), G('baobab', 'tree', tpl('baobab')),
       G('free', 'c_art', () => [{ type: 'free', ask: line('ask.free') }])] },
     { id: 'music', c: 'violet', art: 'c_music', games: [G('xylo', 'c_music', () => [{ type: 'xylo', ask: line('ask.xylo') }]), G('drum', 'drum', () => [{ type: 'drum', ask: line('ask.drum') }]),

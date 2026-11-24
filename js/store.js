@@ -85,6 +85,7 @@
       out.profiles[id] = c;
     });
     if (!Object.keys(out.profiles).length) return { ok: false, why: 'aucun profil lisible' };
+    if (typeof o.active === 'string' && Object.prototype.hasOwnProperty.call(out.profiles, o.active)) out.active = o.active;
     const S = defSettings(), s = {};   // réglages : seulement les clés connues, du bon type
     Object.keys(S).forEach(k => { const v = out.settings[k]; if (v !== undefined && typeof v === typeof S[k]) s[k] = v; });
     if (s.volume !== undefined) s.volume = Math.min(1, Math.max(0, s.volume));
@@ -102,6 +103,8 @@
       ip.rewards.forEach(rw => { if (!cp.rewards.some(x => x.id === rw.id)) cp.rewards.push(rw); });
       Object.keys(ip.playTime).forEach(d => { cp.playTime[d] = Math.max(cp.playTime[d] || 0, ip.playTime[d]); });
       ip.storiesRead.forEach(s => { if (!cp.storiesRead.includes(s)) cp.storiesRead.push(s); });
+      const stickers = Array.isArray(cp.stickers) ? cp.stickers : [];
+      cp.stickers = [...new Set([...stickers, ...ip.stickers])].slice(0, 20);
       cp.recre = Math.max(cp.recre || 0, ip.recre || 0);
       Object.keys(ip.skills || {}).forEach(k => { cp.skills[k] = betterSkill(cp.skills[k], ip.skills[k]); });   // l'historique le plus riche est gardé, jamais remis à zéro
     });
@@ -113,7 +116,7 @@
   function importData(text, mode) {
     const r = validate(text); if (!r.ok) return r;
     const inc = r.data; let next;
-    if (mode === 'replace') { next = Object.assign(defaults(), { profiles: inc.profiles, settings: Object.assign(defSettings(), inc.settings) }); }
+    if (mode === 'replace') { next = Object.assign(defaults(), { profiles: inc.profiles, active: inc.active, settings: Object.assign(defSettings(), inc.settings) }); }
     else { next = mergeData(clone(data), inc); }
     if (!next.profiles[next.active]) next.active = Object.keys(next.profiles)[0] || null;
     next.v = SCHEMA;

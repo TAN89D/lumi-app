@@ -1,6 +1,6 @@
 // LUMI v3 : interface en panneaux de couleur, catégories libres, jeux variés, espace parent renforcé.
 (function () {
-  const APP_VERSION = '3.6.1';
+  const APP_VERSION = '4.0.0';
   const L = LUMI, C = L.config, CATS = Games.CATS, V = L.vocab;
   const $app = document.getElementById('app'), $modal = document.getElementById('modal');
   const t = (k, v) => I18n.t(k, v), line = (k, v) => I18n.line(k, v);
@@ -241,6 +241,7 @@
   const okBtn = (act, dis) => `<button class="okb" id="okb" data-act="${act}" ${dis ? 'disabled' : ''} aria-label="${t('done')}">${IC.check}</button>`;
   const palette = () => `<div class="palette">${Object.values(V.colors).map(c => c.hex).concat(['#ffffff']).map((h, i) => `<button class="pal ${i === 0 ? 'on' : ''}" data-act="pal" data-c="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}</div>`;
   function body(r) {
+    if (r.type === 'maze') return mazeBody(r);
     if (r.type === 'choose') return `${r.show ? `<div class="show">${r.show}</div>` : ''}${r.rhythm ? rhythmControls() : ''}
       ${r.listen ? `<button class="btn sun listen-options" data-act="listen-options">${t('rhyme.listen')}</button>` : ''}
       <div class="tiles t${r.choices.length}">${r.choices.map((c, i) => `<button class="tile" data-act="pick" data-i="${i}" ${r.rhythm && !r.rhythmReady ? 'disabled' : ''}>${c.h}</button>`).join('')}</div>`;
@@ -390,6 +391,10 @@
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
   });
   $app.addEventListener('keydown', e => {
+    if (e.target.closest?.('.maze-game') && e.key.startsWith('Arrow')) {
+      const direction = e.key.slice(5).toLowerCase();
+      if (MAZE_MOVES[direction] && !modalOpen()) { e.preventDefault(); moveMaze(direction); return; }
+    }
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const d = e.target.closest && e.target.closest('.drag'); if (d && !d.classList.contains('placed')) { e.preventDefault(); document.querySelectorAll('.drag.sel').forEach(x => x.classList.remove('sel')); G.sel = d; d.classList.add('sel'); }
     else { const sl = e.target.closest && e.target.closest('.slot'); if (sl && G && G.sel) { e.preventDefault(); drop(G.sel, sl); } }
@@ -445,6 +450,57 @@
     for (let y = 0; y < H; y += 4) for (let x = 0; x < W; x += 4) { const i = (y * W + x) * 4 + 3; if (mask[i] > 128) { body++; if (sd[i] > 0) cov++; } if (sd[i] > 0) ink++; }
     return { cov: body ? cov / body : 0, ratio: body ? ink / body : 9 };
   }
+  // ---- labyrinthe ----
+  const MAZE_MOVES = { up: [0, -1, '↑'], right: [1, 0, '→'], down: [0, 1, '↓'], left: [-1, 0, '←'] };
+  const MAZE_CELL = 40;
+  const mazeOpen = (r, x, y) => ['.', 'S', 'E'].includes(r.grid[y]?.[x]);
+  const mazeTransform = (x, y) => `translate(${x * MAZE_CELL}px, ${y * MAZE_CELL}px)`;
+  function mazeStatus(r) {
+    const [x, y] = r.position, [gx, gy] = r.goal;
+    const directions = Object.entries(MAZE_MOVES)
+      .filter(([, [dx, dy]]) => mazeOpen(r, x + dx, y + dy))
+      .map(([dir]) => t('maze.' + dir)).join(', ');
+    return t('maze.status', { x: x + 1, y: y + 1, gx: gx + 1, gy: gy + 1, directions });
+  }
+  function mazeBody(r) {
+    const cell = MAZE_CELL;
+    const cells = r.grid.map((row, y) => [...row].map((value, x) =>
+      `<rect x="${x * cell + 1}" y="${y * cell + 1}" width="${cell - 2}" height="${cell - 2}" rx="6" class="maze-${value === '#' ? 'wall' : value === 'E' ? 'goal' : 'path'}"/>`
+    ).join('')).join('');
+    const icon = (x, y, key) => `<svg x="${x * cell + 4}" y="${y * cell + 4}" width="32" height="32" viewBox="0 0 100 100">${Draw.inner(key)}</svg>`;
+    const [x, y] = r.position;
+    const buttons = Object.entries(MAZE_MOVES).map(([direction, [, , glyph]]) =>
+      `<button type="button" class="ib maze-arrow maze-${direction}" data-act="maze-move" data-direction="${direction}" aria-label="${t('maze.' + direction)}">${glyph}</button>`
+    ).join('');
+    return `<section class="maze-game" tabindex="0" aria-label="${t('g.logic.maze')}">
+      <svg class="maze-board" viewBox="0 0 ${r.grid[0].length * cell} ${r.grid.length * cell}" aria-hidden="true">
+        ${cells}${icon(...r.goal, 'star')}<g class="maze-player" style="transform:${mazeTransform(x, y)}">${icon(0, 0, 'lion')}</g>
+      </svg>
+      <div class="maze-controls">${buttons}</div>
+      <p id="maze-status" class="maze-status" role="status">${mazeStatus(r)}</p>
+    </section>`;
+  }
+  function moveMaze(direction) {
+    const r = cur();
+    if (r.type !== 'maze' || r.locked || modalOpen()) return;
+    const [dx, dy] = MAZE_MOVES[direction];
+    const x = r.position[0] + dx, y = r.position[1] + dy;
+    const status = document.getElementById('maze-status');
+    if (!mazeOpen(r, x, y)) { status.textContent = t('maze.blocked') + ' ' + mazeStatus(r); return; }
+    r.position = [x, y];
+    $app.querySelector('.maze-player').style.transform = mazeTransform(x, y);
+    if (x === r.goal[0] && y === r.goal[1]) {
+      r.locked = true;
+      status.textContent = t('maze.arrived');
+      Sound.good();
+      praise();
+      roundDone();
+    } else {
+      status.textContent = mazeStatus(r);
+      Sound.tap();
+    }
+  }
+
   // ---- musique ----
   const rhythmControls = () => `<div class="rhythm-tools">
     <span class="rhythm-indicator" id="rhythm-indicator" aria-hidden="true">·</span>
@@ -624,6 +680,7 @@
     snext() { if (!SES || SES.i + 1 >= SES.list.length) { SES = null; go('home'); return; } SES.i++; const [c, g] = SES.list[SES.i]; startGame(c, g, { age: Rules.adaptAge(P().age, SES.recent) }); },
     say() { const r = cur(); if (!r || r.rhythmPlaying) return; if (r.type === 'story') say(storyLine(r.story, G.pg || 0)); else { say(r.ask); if (r.type === 'melody') playMelody(); armNudge(); } },
     rhythm() { playRhythm(); },
+    'maze-move'(el) { moveMaze(el.dataset.direction); },
     'listen-options'() { const r = cur(); if (r.listen && !r.locked) { say(r.listen); armNudge(); } },
     note(el) { pressNote(+el.dataset.note); },
     melody() { playMelody(); },

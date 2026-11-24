@@ -94,6 +94,17 @@
     ({ S } = await freshStore({ 'lumi.v1': v1() }));
     r = S.importData(v2(), 'replace');
     ok(r.ok && Object.keys(S.data().profiles).length === 1 && S.data().profiles.p2 && !S.data().profiles.p1, 'le mode « remplacer » remplace');
+    const multi = JSON.parse(v1());
+    multi.v = 3;
+    multi.profiles.p1.stickers = ['letters'];
+    multi.profiles.p2 = Object.assign({}, JSON.parse(v2()).profiles.p2, { stickers: ['nature'] });
+    multi.active = 'p2';
+    r = S.importData(JSON.stringify(multi), 'replace');
+    ok(r.ok && S.profile().id === 'p2' && S.profile().age === 5, 'remplacement : le profil actif de la sauvegarde est restauré avec son âge');
+    multi.active = 'p1';
+    multi.profiles.p2.stickers.push('music');
+    r = S.importData(JSON.stringify(multi), 'merge');
+    ok(r.ok && S.profile().id === 'p2' && S.profile().stickers.join() === 'nature,music', 'fusion : les autocollants sont réunis sans doublons et le profil local reste actif');
 
     group('Import — atomicité : l’ancien état survit à un échec');
     let before;
@@ -286,6 +297,31 @@
     const numberGames = Games.CATS.find(c => c.id === 'numbers').games;
     const mirrorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'symmetry');
     const inspect = document.createElement('div');
+    const mazeGame = Games.CATS.find(c => c.id === 'logic').games.find(g => g.id === 'maze');
+    const pathLengths = [];
+    for (const age of [5, 6, 7, 8]) {
+      const rounds = mazeGame.make(3, { age });
+      const lengths = rounds.map(({ grid, position, goal }) => {
+        const queue = [[...position, 0]], seen = new Set([position.join()]);
+        for (let i = 0; i < queue.length; i++) {
+          const [x, y, distance] = queue[i];
+          if (x === goal[0] && y === goal[1]) return distance;
+          for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+            const point = [x + dx, y + dy];
+            if (['.', 'S', 'E'].includes(grid[point[1]]?.[point[0]]) && !seen.has(point.join())) {
+              seen.add(point.join());
+              queue.push([...point, distance + 1]);
+            }
+          }
+        }
+        return 0;
+      });
+      ok(rounds.length === 2 && lengths.every(Boolean) && rounds.every(({ grid, position, goal }) =>
+        grid.every(row => row.length === grid[0].length) && grid[position[1]][position[0]] === 'S'
+        && grid[goal[1]][goal[0]] === 'E'), 'labyrinthe : deux sorties accessibles à ' + age + ' ans');
+      pathLengths.push(lengths.reduce((a, b) => a + b, 0));
+    }
+    ok(pathLengths[0] < pathLengths[1] && pathLengths[1] < pathLengths[2], 'labyrinthe : trajets plus longs aux paliers supérieurs');
     const geography = Games.CATS.find(c => c.id === 'countries').games.find(g => g.id === 'map');
     const countryIds = Object.keys(LUMI.vocab.countries);
     for (const language of ['fr', 'en']) {
