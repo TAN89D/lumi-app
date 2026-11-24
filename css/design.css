@@ -133,7 +133,6 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:34vh;backgr
 @media (max-width:359px){.h-row{grid-template-columns:1fr}.h-profile b{max-width:90px}}
 @media (max-height:520px) and (orientation:landscape){.h-start{min-height:64px}}
 body.contrast .h-welcome,body.contrast .h-mission,body.contrast .gcat{border-color:#000}
-@media (prefers-reduced-motion:no-preference){.h-start{animation:pulse3 3s ease-in-out infinite}@keyframes pulse3{50%{transform:scale(1.015)}}}
 
 /* =====================================================================
    V3.3 — refonte premium : bienvenue, activité, réussite, histoires, parents, profils, animations
@@ -324,7 +323,8 @@ body.contrast #decor{opacity:.3}
 @media (min-width:900px){#decor .dc-ground{height:clamp(240px,40vh,560px)}}
 
 /* jeux 6-8 ans */
-.calc{font-size:clamp(2.2rem,11vw,3.4rem);font-weight:900;color:var(--b);text-shadow:0 4px 0 rgba(0,0,0,.1);display:inline-block}
+.calc{display:inline-flex;align-items:center;gap:.32em;white-space:nowrap;font-size:clamp(1.6rem,7vw,3.4rem);font-weight:900;color:var(--ink2)}
+.show .calc .q{width:1.55em;height:1.55em;border:2px dashed currentColor;border-radius:.35em;color:inherit;font-size:inherit}
 .coin{display:inline-flex;width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a0,#d9a21b);border:4px solid #a8760f;box-shadow:0 4px 0 #7a540a;align-items:center;justify-content:center;font-weight:900;color:#5a3a05;font-size:1.05rem}
 .tile .tx,.tx{display:block;font-size:1.25rem;font-weight:900;line-height:1.1;padding:4px;overflow-wrap:anywhere;text-align:center;color:var(--ink2)}
 .clockbox{width:min(46vw,190px);height:min(46vw,190px);margin:0 auto}.clock{width:100%;height:100%}
@@ -366,3 +366,50 @@ body.contrast #decor{opacity:.3}
 .w-logo .sign,.h-logo .sign{margin-top:-6px}
 .w-logo .logo-img{width:min(80vw,420px)}
 body.contrast .logo-img{filter:none}
+
+/* LUMI V4 — réactions du guide et mouvements d'ambiance */
+.guide.guide-lumi{display:flex;align-items:center;gap:12px;min-height:0;margin:8px auto 12px}
+.guide-lumi .g-lumi{width:clamp(70px,22vw,108px)}
+.guide-lumi .bubble{position:relative;width:auto;flex:1;min-width:0}
+.pause-lumi{width:110px;margin:0 auto}
+.symmetry-grid{display:block;width:min(100%,380px);height:auto;color:#5a356e}
+.symmetry-grid text{fill:currentColor;font-size:21px;font-weight:800;text-anchor:middle;dominant-baseline:central}
+.melody-tools{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:14px}
+.melody-tools progress{width:min(100%,260px);height:14px;accent-color:var(--leafD)}
+.melody-tools .btn:disabled{opacity:.65}
+.word-parts{display:flex;align-items:center;gap:.35em;color:var(--ink2)}
+.sudoku-grid{border-collapse:collapse;border:3px solid var(--ink2);color:var(--ink2);background:#fff6df}
+.sudoku-grid td{width:clamp(2.3rem,12vw,3.4rem);height:clamp(2.3rem,12vw,3.4rem);border:1px solid #77608a;text-align:center;font-size:1.5rem;font-weight:800}
+.sudoku-grid td:nth-child(2){border-right:3px solid var(--ink2)}
+.sudoku-grid tr:nth-child(2) td{border-bottom:3px solid var(--ink2)}
+.sudoku-grid .sudoku-target{background:#ffc84a;text-decoration:underline}
+.food-chain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.65rem;width:min(100%,390px);padding:0;list-style:none}
+.food-chain li{position:relative;display:grid;place-items:center;min-width:0;min-height:88px;border-radius:14px;background:#fff6df;color:#482561;text-align:center}
+.food-chain li+li::before{content:"→";position:absolute;right:100%;width:1.65rem;font-size:1.3rem;font-weight:900}
+.food-figure{display:grid;justify-items:center;gap:3px;padding:5px;font-size:clamp(.9rem,3.5vw,1.3rem);font-weight:800;overflow-wrap:anywhere}
+.food-figure svg{display:block;width:clamp(32px,13vw,70px);height:auto}
+.food-missing{font-size:2rem;font-weight:900}
+.lumi .l-thought,.lumi .l-pause-sign{display:none}
+.lumi[data-state=think] .l-thought,.lumi[data-state=pause] .l-pause-sign{display:inline}
+.lumi[data-state=think] .l-head{transform:rotate(-7deg)}
+.lumi[data-state=think] .l-arm-r{transform:rotate(-143deg)}
+.lumi[data-state=pause] .l-head{transform:rotate(8deg)}
+.lumi[data-state=pause] .m-rest,.lumi[data-state=wave] .m-rest{display:none}
+.lumi[data-state=pause] .m-pause,.lumi[data-state=wave] .m-happy{display:inline}
+.lumi[data-state=pause] .l-eyes{transform:scaleY(.22);transform-origin:center}
+.lumi[data-state=pause] .l-lid{visibility:hidden}
+
+@keyframes lumi-glow{0%,100%{opacity:1}50%{opacity:.52}}
+@keyframes lumi-yawn{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}
+@keyframes lumi-halo{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.65;transform:scale(1.13)}}
+@keyframes lumi-button-glow{0%,100%{opacity:0}50%{opacity:.65}}
+.dc-halo,.lumi .m-pause{transform-box:fill-box;transform-origin:center}
+@media (prefers-reduced-motion:no-preference){
+  body:not(.calm) .h-start{position:relative}
+  body:not(.calm) .h-start::after{content:"";position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:0 0 18px 3px #ffdf75;animation:lumi-button-glow 3.2s ease-in-out 2}
+  body:not(.calm) .lumi .l-thought{animation:lumi-glow 3.6s ease-in-out 2}
+  body:not(.calm) .lumi .m-pause{animation:lumi-yawn 1.8s ease-in-out 2}
+  body:not(.calm) .dc-halo{animation:lumi-halo 5s ease-in-out 2}
+  body:not(.calm) .result3 .big-stars .star.on{animation:lumi-pop .6s both,lumi-glow .8s ease-in-out;animation-delay:var(--star-delay),calc(var(--star-delay) + 1.15s)}
+  body:not(.calm) :is(.tile,.gcard,.ib,.h-start):active{scale:.97;transition:scale .12s ease-out}
+}

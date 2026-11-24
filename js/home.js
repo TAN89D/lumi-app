@@ -109,12 +109,12 @@ window.Home = (function () {
   const activeTab = screen => ({ home: 'home', games: 'games', grp: 'games', cat: 'games', recre: 'games', missions: 'games', garage: 'games', trophies: 'trophies', progress: 'progress', voyage: 'games' }[screen] || 'home');
 
   // ----- écran d'activité : personnage-guide + bulle de consigne (la vraie consigne, traduite) pour les exercices à choix -----
-  const guide = (x, ask) => `<div class="guide"><img src="${IMG}guide-boy.jpg" width="540" height="490" alt="" decoding="async"><button class="bubble" data-act="say" aria-label="${esc(x.t('play'))}"><span class="spk">${x.IC.speaker}</span><span>${esc(ask)}</span></button></div>`;
+  const guide = (x, ask) => `<div class="guide${x.mascot ? ' guide-lumi' : ''}">${x.mascot ? '<div class="mascot-slot g-lumi" data-state="think" aria-hidden="true"></div>' : `<img src="${IMG}guide-boy.jpg" width="540" height="490" alt="" decoding="async">`}<button class="bubble" id="ask" data-act="say"><span class="spk" aria-hidden="true">${x.IC.speaker}</span><span>${esc(ask)}</span></button></div>`;
 
   // ----- écran de réussite : le nombre d'étoiles est celui réellement gagné -----
   const result = (x, r) => `<div class="result3">${x.mascot ? `<div class="mascot-slot r-lumi" data-state="cheer" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : `<img class="lion3" src="${IMG}lion-cheer.jpg" width="550" height="402" alt="" decoding="async">`}
       <h1>${esc(r.name ? x.t('res.bravo', { name: r.name }) : x.t('res.bravo0'))}</h1><p class="sub">${esc(x.t('res.well'))}</p>
-      <div class="big-stars" role="img" aria-label="${esc(x.t('res.stars', { n: r.stars }))}">${[0, 1, 2].map(i => `<span class="star ${i < r.stars ? 'on' : ''}" style="animation-delay:${i * 0.25}s">★</span>`).join('')}</div>
+      <div class="big-stars" role="img" aria-label="${esc(x.t('res.stars', { n: r.stars }))}">${[0, 1, 2].map(i => `<span class="star ${i < r.stars ? 'on' : ''}" style="--star-delay:${i * 0.25}s">★</span>`).join('')}</div>
       ${r.sticker ? `<div class="newc sticker"><div class="pic">${r.sticker}</div><span>${esc(x.t('voy.sticker'))}</span></div>` : ''}${r.reward ? `<div class="newc"><div class="pic">${r.reward}</div><span>${esc(x.t('newReward'))}</span></div>` : ''}${r.recre || ''}
       <button class="h-start cont" data-act="${r.nextAct}" ${r.nextData}>${esc(x.t('btn.continue'))}<span class="ic">${x.IC.play}</span></button>
       <div class="row3"><button class="ib" data-act="game" data-c="${r.cat}" data-g="${r.gid}" aria-label="${esc(x.t('replay'))}">${x.IC.replay}</button><button class="ib" data-act="go" data-to="home" aria-label="${esc(x.t('tab.home'))}">${x.IC.home}</button></div></div>`;

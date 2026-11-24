@@ -282,6 +282,63 @@
       ok(bad.length === 0, `toutes les manches valides (${lg}, ${age} ans)`, bad.slice(0, 4).join(' | '));
     }
     I18n.setLang('fr');
+    group('V4 — le miroir et les calculs jusqu’à 100');
+    const numberGames = Games.CATS.find(c => c.id === 'numbers').games;
+    const mirrorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'symmetry');
+    const inspect = document.createElement('div');
+    const sudokuGame = Games.CATS.find(c => c.id === 'logic').games.find(g => g.id === 'sudoku');
+    const chainGame = Games.CATS.find(c => c.id === 'nature').games.find(g => g.id === 'chain');
+    for (const age of [7, 8]) {
+      ok(sudokuGame.make(3, { age }).every(r => {
+        inspect.innerHTML = r.show;
+        const cells = [...inspect.querySelectorAll('td')];
+        const target = cells.findIndex(cell => cell.classList.contains('sudoku-target'));
+        const row = Math.floor(target / 4), col = target % 4;
+        const seen = cells.filter((_, i) => Math.floor(i / 4) === row || i % 4 === col ||
+          (Math.floor(i / 8) === Math.floor(row / 2) && Math.floor((i % 4) / 2) === Math.floor(col / 2)))
+          .map(cell => cell.textContent);
+        const available = ['1', '2', '3', '4'].filter(value => !seen.includes(value));
+        return cells.length === 16 && cells.filter(cell => cell.textContent === '·').length === (age === 8 ? 2 : 0)
+          && available.join() === r.choices.filter(choice => choice.ok).map(choice => choice.h).join()
+          && available.length === 1;
+      }), 'mini-sudoku : une seule réponse possible à ' + age + ' ans');
+    }
+    for (const language of ['fr', 'en']) {
+      I18n.setLang(language);
+      const chainAnswers = ['zebra', 'bird', 'grasshopper', 'grass'];
+      ok(chainGame.make(3, { age: 7 }).every((r, i) => {
+        inspect.innerHTML = r.show;
+        const choices = r.choices.filter(c => c.ok);
+        return inspect.querySelectorAll('li').length === 3 && inspect.querySelectorAll('.food-missing').length === 1
+          && choices.length === 1 && choices[0].say.text === I18n.t('chain.' + chainAnswers[i])
+          && r.choices.every(c => c.say.text && !c.say.text.startsWith('chain.'));
+      }), 'chaînes alimentaires : maillon manquant et réponses traduites en ' + language);
+    }
+    I18n.setLang('fr');
+    for (const age of [6, 7, 8]) {
+      const max = Rules.caps(age).calcMax;
+      for (const id of ['add', 'sub']) {
+        const rounds = numberGames.find(g => g.id === id).make(3, { age });
+        ok(rounds.every((r, i) => {
+          const [, a, sign, b] = r.show.match(/>(\d+) ([+−]) (\d+) =/);
+          const result = sign === '+' ? +a + +b : +a - +b;
+          const ceiling = sign === '+' ? result : +a;
+          return ceiling <= max && (age < 8 || i < 2 || ceiling > 50)
+            && r.choices.filter(c => c.ok).map(c => +c.h).join() === String(result)
+            && r.choices.every(c => +c.h >= 0 && +c.h <= max);
+        }), id + ' : calcul et réponses cohérents à ' + age + ' ans');
+      }
+      ok(mirrorGame.make(3, { age }).every(r => {
+        inspect.innerHTML = r.show;
+        const target = inspect.querySelector('rect[fill="#ffc84a"]');
+        const axis = +inspect.querySelector('svg').getAttribute('viewBox').split(' ')[2] / 2;
+        const x = 2 * axis - (+target.getAttribute('x') + 20);
+        const y = +target.getAttribute('y') + 20;
+        const reflected = [...inspect.querySelectorAll('text')].find(el => +el.getAttribute('x') === x && +el.getAttribute('y') === y);
+        const correct = r.choices.filter(c => c.ok);
+        return correct.length === 1 && correct[0].h === reflected?.textContent;
+      }), 'le miroir reflète la case sur le même rang à ' + age + ' ans');
+    }
 
     // ============ 9. Voix et volume (synthèse simulée) ============
     group('Voix — volume, langue, absence de voix, enregistrements par identifiant');
@@ -321,7 +378,7 @@
     const scripts = [...document.scripts].map(s => s.getAttribute('src')).filter(x => x && x.startsWith('../js/')).map(x => x.replace('../', ''));
     const idx = await (await fetch('../index.html', { cache: 'no-store' })).text(); const idxScripts = [...idx.matchAll(/src="(js\/[^"]+)"/g)].map(m => m[1]);
     ok(idxScripts.every(s => files.includes(s)) && files.includes('css/lumi2.css'), 'tout script appelé par index.html est dans la liste du cache');
-    ok(/const VERSION = '3-[2-9]-\d+'/.test(swText), 'la version du cache est incrémentée (3-2-x)');
+    ok(/const VERSION = '4-\d+-\d+-lot\d+'/.test(swText), 'la version du cache est incrémentée (V4)');
     ok(/new Request\(f, \{ cache: 'reload' \}\)/.test(swText) && /LEGACY = \/\^lumi-v/.test(swText) && /req\.url\.indexOf\(SCOPE\) !== 0/.test(swText), 'installation sans cache HTTP périmé ; anciens caches LUMI ciblés ; requêtes hors de LUMI ignorées');
     ok(/k\.indexOf\(PREFIX\) === 0 && k !== CACHE\) \|\| LEGACY\.test\(k\)/.test(swText), 'seuls les caches de LUMI (préfixe + anciens noms) sont supprimés');
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -336,7 +393,7 @@
       const keys = await caches.keys(), mine = keys.filter(k => k.indexOf('lumi-app::') === 0);
       ok(keys.includes('autre-app-cache-v1'), 'le cache d’une autre application du domaine n’est PAS supprimé');
       ok(!keys.includes('lumi-v24'), 'l’ancien cache de LUMI est supprimé');
-      ok(mine.length === 1 && /::3-[2-9]-\d+$/.test(mine[0]), 'un seul cache LUMI courant, nommé avec l’adresse et la version');
+      ok(mine.length === 1 && /::4-\d+-\d+-lot\d+$/.test(mine[0]), 'un seul cache LUMI courant, nommé avec l’adresse et la version');
       const cache = await caches.open(mine[0]); const cached = await Promise.all(files.map(f => cache.match(new Request('../' + (f === './' ? '' : f)), { ignoreSearch: true }).then(x => !!x)));
       ok(cached.every(Boolean), 'tous les fichiers sont présents dans le cache (le jeu démarre sans connexion)', files.filter((f, i) => !cached[i]).join(', '));
       await caches.delete('autre-app-cache-v1'); await reg.unregister(); for (const k of await caches.keys()) if (k.indexOf('lumi-app::') === 0 && k.indexOf(location.origin) >= 0) await caches.delete(k);
@@ -441,8 +498,8 @@
     group('V3.4 — mascotte Lumi (vectorielle, animable, repli statique)');
     const holder = document.createElement('div'); document.body.appendChild(holder);
     const mc = Mascot.mount(holder, { state: 'rest' }), parts = ['l-body', 'l-head', 'l-ear-l', 'l-ear-r', 'l-lid', 'l-arm-l', 'l-arm-r', 'm-rest', 'm-talk', 'm-happy', 'm-oops'];
-    ok(Mascot.STATES.join() === 'rest,wave,talk,happy,oops,cheer' && parts.every(c => holder.querySelector('.' + c)) && !holder.querySelector('image,img'), 'Lumi est un vrai personnage vectoriel : corps, tête, oreilles, paupières, deux pattes, quatre bouches (aucune photo)');
-    ok(Mascot.STATES.every(s => { mc.set(s); return mc.state === s; }) && (mc.set('inconnu'), mc.state === 'rest'), 'les six états (repos, salut, parole, bonne réponse, erreur, fête) sont réglables ; un état inconnu retombe au repos');
+    ok(Mascot.STATES.join() === 'rest,wave,talk,think,happy,oops,cheer,pause' && parts.every(c => holder.querySelector('.' + c)) && !holder.querySelector('image,img'), 'Lumi est un vrai personnage vectoriel : corps, tête, oreilles, paupières, deux pattes, quatre bouches (aucune photo)');
+    ok(Mascot.STATES.every(s => { mc.set(s); return mc.state === s; }) && (mc.set('inconnu'), mc.state === 'rest'), 'les huit états sont réglables ; un état inconnu retombe au repos');
     mc.set('happy', 60); await wait(160); ok(mc.state === 'rest', 'une pose temporaire (bonne réponse) revient d’elle-même au repos');
     mc.setSpeaking(true); const talkSt = mc.state, talkAttr = mc.el.getAttribute('data-speaking'); mc.setSpeaking(false); ok(talkSt === 'talk' && talkAttr === '1' && mc.state === 'rest', 'la bouche suit l’état de narration (parle / se tait)');
     mc.set('cheer'); mc.setSpeaking(true); ok(mc.state === 'cheer', 'une narration ne casse pas la pose de fête'); mc.setSpeaking(false);
@@ -503,7 +560,7 @@
       Object.assign(sx, keepV); speechSynthesis.speak = oSp; speechSynthesis.getVoices = oGv; window.SpeechSynthesisUtterance = oUt; Sound.refresh();
       Sound.stop = oStop;
       const swT = await (await fetch('../sw.js', { cache: 'no-store' })).text();
-      ok(swT.indexOf("'js/mascot.js'") >= 0 && swT.indexOf("'js/story-quiz.js'") >= 0 && /const VERSION = '3-[4-9]-/.test(swT), 'mascotte et questions sont dans le cache hors ligne (version 3-x)');
+      ok(swT.indexOf("'js/mascot.js'") >= 0 && swT.indexOf("'js/story-quiz.js'") >= 0 && /const VERSION = '4-/.test(swT), 'mascotte et questions sont dans le cache hors ligne (V4)');
       const old = JSON.parse(snap4); P4.progress = old.progress; P4.rewards = old.rewards; P4.storiesRead = old.storiesRead; P4.skills = old.skills; P4.recre = old.recre; P4.age = old.age; P4.playTime = old.playTime; Store.save(); A4.go('home');
     } else ok(false, 'application non chargée dans la page de test');
 
@@ -529,7 +586,7 @@
     group('V3.5 — lecteur de planches d’animation (personnages 3D à venir)');
     ok(Sprite.parseName('lumi-wave-4x2.png').frames === 8 && Sprite.parseName('x-6x1.webp').cols === 6 && Sprite.parseName('sans-grille.png') === null, 'le nom d’une planche donne sa grille (4x2 = 8 images)');
     ok(Sprite.frame(0, 4, 2).x === 0 && Sprite.frame(3, 4, 2).x === 100 && Sprite.frame(4, 4, 2).y === 100 && Sprite.frame(5, 4, 2).x > 30 && Sprite.frame(5, 4, 2).x < 40, 'position exacte de chaque image dans la planche');
-    const spH = document.createElement('div'); document.body.appendChild(spH); spH.innerHTML = Sprite.html({ src: 'data:image/png;base64,AAAA', cols: 2, rows: 2, fps: 40, label: 'Test' }); const spE = spH.firstChild, spC = Sprite.play(spE); await wait(150); const moved = +spE.dataset.i; spC.stop();
+    const spH = document.createElement('div'); document.body.appendChild(spH); spH.innerHTML = Sprite.html({ src: 'data:image/png;base64,AAAA', cols: 2, rows: 2, fps: 40, loop: false, label: 'Test' }); const spE = spH.firstChild, spC = Sprite.play(spE); await wait(150); const moved = +spE.dataset.i; spC.stop();
     ok(moved > 0 && spE.getAttribute('role') === 'img' && spE.getAttribute('aria-label') === 'Test', 'la planche s’anime (images qui défilent) et reste accessible');
     const oMM2 = window.matchMedia; window.matchMedia = () => ({ matches: true }); const spE2 = document.createElement('span'); spE2.className = 'sprite'; Object.assign(spE2.dataset, { cols: 2, rows: 2, frames: 4, fps: 40, loop: 1 }); spH.appendChild(spE2); Sprite.play(spE2); await wait(150); const frozen = +spE2.dataset.i; window.matchMedia = oMM2; spH.remove();
     ok(frozen === 0, 'animations réduites ou mode calme : seule la première image est affichée (image fixe)');
@@ -579,6 +636,13 @@
     const mainSrc = await (await fetch('../js/main.js', { cache: 'no-store' })).text();
     ok(/updateViaCache: 'none'/.test(mainSrc) && /controllerchange/.test(mainSrc) && /pendingReload/.test(mainSrc), 'le service worker est redemandé au réseau et la nouvelle version se recharge d’elle-même (jamais en plein jeu)');
     if (window.LumiApp) { LumiApp.go('parent'); document.querySelector('.ptab[data-tab="settings"]').click(); ok(/version \d+\.\d+/.test(document.querySelector('.appver').textContent), 'la version de LUMI est affichée dans l’espace parents (Paramètres)'); LumiApp.go('home'); }
+
+    group('V3.6.2 — icône de l’application (logo A)');
+    const mf = JSON.parse(await (await fetch('../manifest.webmanifest', { cache: 'no-store' })).text()), swI = await (await fetch('../sw.js', { cache: 'no-store' })).text();
+    const isz = await Promise.all(mf.icons.map(i => fetch('../' + i.src, { cache: 'no-store' }).then(r => r.ok ? r.blob().then(b => ({ n: b.size, w: 0 })) : { n: 0 })));
+    ok(mf.icons.length === 3 && mf.icons.every(i => /\.png$/.test(i.src)) && mf.icons.some(i => i.purpose === 'maskable' && i.sizes === '512x512') && mf.icons.filter(i => i.purpose === 'any').length === 2 && !mf.icons.some(i => /svg/.test(i.type)), 'manifeste : icônes PNG « any » 192 et 512 + une icône « maskable » 512 (plus d’ancienne icône vectorielle)');
+    ok(isz.every(x => x.n > 1000 && x.n < 110000) && mf.icons.every(i => swI.indexOf("'" + i.src + "'") >= 0), 'icônes légères (< 110 Ko) et présentes dans le cache hors ligne');
+    const idxH = await (await fetch('../index.html', { cache: 'no-store' })).text(); ok(/rel="icon" href="icon-192\.png"/.test(idxH) && /apple-touch-icon" href="icon-192\.png"/.test(idxH), 'onglet du navigateur et iPhone utilisent la nouvelle icône');
 
     // ============ 11. Application ============
     group('Application — écrans');

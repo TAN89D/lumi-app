@@ -1,6 +1,6 @@
 // LUMI v3 : interface en panneaux de couleur, catégories libres, jeux variés, espace parent renforcé.
 (function () {
-  const APP_VERSION = '3.6.1';
+  const APP_VERSION = '4.0.1';
   const L = LUMI, C = L.config, CATS = Games.CATS, V = L.vocab;
   const $app = document.getElementById('app'), $modal = document.getElementById('modal');
   const t = (k, v) => I18n.t(k, v), line = (k, v) => I18n.line(k, v);
@@ -55,19 +55,21 @@
   let mascots = {};
   function mountMascots() {
     if (!window.Mascot) return;
-    Mascot.destroyAll(); mascots = {};
-    document.querySelectorAll('.mascot-slot').forEach(el => {
-      const st = el.dataset.state || 'rest', c = Mascot.mount(el, { state: st }); if (!c) return;
-      if (st === 'wave') c.set('wave', 3200); else if (st === 'cheer') c.set('cheer', 4500);
-      mascots[(el.className.match(/\b([wrbq])-lumi\b/) || [])[1] || 'x'] = c;
+    Object.values(mascots).forEach(c => c.destroy()); mascots = {};
+    $app.querySelectorAll('.mascot-slot').forEach(el => {
+      const st = el.dataset.state || 'rest', entrance = st === 'wave' || st === 'cheer';
+      const c = Mascot.mount(el, { state: entrance ? 'rest' : st });
+      if (entrance) c.set(st, st === 'wave' ? 2400 : 1800);
+      mascots[(el.className.match(/\b([wrbqg])-lumi\b/) || [])[1] || 'x'] = c;
     });
     if (Sound.speaking && Sound.speaking()) Object.values(mascots).forEach(c => c.setSpeaking(true));
   }
   const tabsHTML = () => Home.nav(homeCtx(), Home.activeTab(S.screen));   // barre à 4 onglets (voir home.js)
   const say = l => Sound.speak(l);
   if (window.Mascot) Mascot.bindSpeech(Sound);
-  const showModal = h => { $modal.innerHTML = h; $modal.setAttribute('role', 'dialog'); $modal.setAttribute('aria-modal', 'true'); };
-  const hideModal = () => { $modal.innerHTML = ''; };
+  let modalMascot = null;
+  const showModal = h => { hideModal(); $modal.innerHTML = h; $modal.setAttribute('role', 'dialog'); $modal.setAttribute('aria-modal', 'true'); };
+  const hideModal = () => { modalMascot?.destroy(); modalMascot = null; $modal.innerHTML = ''; };
   const modalOpen = () => $modal.innerHTML !== '';
   const fb = document.createElement('div'); fb.className = 'fb'; fb.setAttribute('role', 'status'); fb.setAttribute('aria-live', 'polite'); document.body.appendChild(fb);
   let fbT; function toast(msg, ok) { fb.textContent = msg; fb.className = 'fb on' + (ok ? '' : ' no'); clearTimeout(fbT); fbT = setTimeout(() => { fb.className = 'fb'; }, 1100); }
@@ -256,7 +258,9 @@
     if (r.type === 'free') { G.col = '#e8453c'; G.strokes = 0; return `<div class="tracebox"><canvas id="tc" class="tc" role="img" aria-label="${esc(r.ask.text)}"></canvas></div>${palette()}<div class="tools"><button class="ib" data-act="fclear" aria-label="${t('p.none')}">${IC.erase}</button></div>${okBtn('adone', true)}`; }
     if (r.type === 'xylo' || r.type === 'melody') {
       G.taps = 0; const nn = NOTES();
-      return `<div class="xylo">${L.notes.map((n, i) => `<button class="bar" data-note="${i}" style="background:${n.c};height:${r.type === 'melody' ? 200 : 110 + i * 20}px" aria-label="${nn[i]}">${nn[i]}</button>`).join('')}</div>${r.type === 'xylo' ? okBtn('adone', true) : ''}`;
+      return `<div class="xylo">${L.notes.map((n, i) => `<button class="bar" data-act="note" data-note="${i}" style="background:${n.c};height:${r.type === 'melody' ? 200 : 110 + i * 20}px" aria-label="${nn[i]}">${nn[i]}</button>`).join('')}</div>
+        ${r.type === 'xylo' ? okBtn('adone', true) : `<div class="melody-tools"><progress id="melody-progress" value="${r.pos || 0}" max="${r.len}" aria-label="${t('music.progress', { done: r.pos || 0, total: r.len })}"></progress>
+        <button class="btn sun" data-act="melody">${t('music.replay')}</button></div>`}`;
     }
     if (r.type === 'drum') { G.taps = 0; return `<button class="djembe" id="dj" aria-label="${esc(r.ask.text)}">${dr('drum')}</button>${okBtn('adone', true)}`; }
     if (r.type === 'story' && G.quizOn && G.quiz) return Home.quiz(homeCtx(), G.quiz);
@@ -273,6 +277,10 @@
   function enterQuiz() {
     const r = cur(), qz = window.StoryQuiz && StoryQuiz.has(r.story.id) ? StoryQuiz.build(r.story.id, r.story.code, P().age) : null;
     if (!qz) { finish(); return; }
+    G.quizNext = StoryQuiz.followup(r.story.id, r.story.code, P().age);
+    showQuiz(qz);
+  }
+  function showQuiz(qz) {
     G.quiz = qz; G.quizOn = true; G.quizNew = true; G.quizLocked = false; render();
   }
   const quizLine = () => ({ id: cur().story.code + ':quiz.' + G.quiz.id + '.q', text: G.quiz.q, lang: cur().story.speech });
@@ -285,7 +293,9 @@
     if (r.type === 'fill') { G.put = new Set(); paintFill(); }
     if (r.type === 'swap') initSwap();
     if (r.type === 'trace' || r.type === 'free') initCanvas(r.type);
-    if (r.type === 'melody' && first) setTimeout(playMelody, 2200);
+    if (r.type === 'melody' && first) setTimeout(() => {
+      if (S.screen === 'play' && cur() === r && !r.seq && !modalOpen()) playMelody();
+    }, 2200);
     armNudge();
   }
   // Coup de pouce : si l'enfant ne touche rien pendant 12 s, la consigne se répète et le haut-parleur pulse.
@@ -336,6 +346,7 @@
   function pickTile(el) {
     const r = cur(); if (r.locked) return;
     const c = r.choices[+el.dataset.i];
+    mascots.g?.set(c.ok ? 'happy' : 'oops', c.ok ? 900 : 1500);
     if (c.ok) { r.locked = true; el.classList.add('good'); Sound.good(); const l = I18n.pickLine('praise'); toast(l.text, true); say(c.say || l); roundDone(); }
     else {
       G.err++; r.wrong = (r.wrong || 0) + 1; el.classList.add('bad'); wrongMsg(); armNudge();
@@ -434,21 +445,37 @@
   }
   // ---- musique ----
   const flashBar = i => { const b = document.querySelector(`.bar[data-note="${i}"]`); if (b) { b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 220); } };
+  const onRound = r => S.screen === 'play' && cur() === r;
+  function paintMelody(r) {
+    const progress = document.getElementById('melody-progress');
+    if (!progress) return;
+    progress.value = r.pos;
+    progress.setAttribute('aria-label', t('music.progress', { done: r.pos, total: r.len }));
+    $app.querySelectorAll('[data-act="note"], [data-act="melody"]').forEach(button => { button.disabled = !!(r.listen || r.locked); });
+  }
   function playMelody() {
-    const r = cur(); if (!r || r.type !== 'melody') return;
-    r.seq = Array.from({ length: r.len }, () => Math.floor(Math.random() * 5)); r.pos = 0; r.listen = true;
-    const token = G; r.seq.forEach((n, i) => setTimeout(() => { if (G !== token) return; Sound.note(L.notes[n].f); flashBar(n); if (i === r.seq.length - 1) r.listen = false; }, 600 * i));
+    const r = cur(); if (!r || r.type !== 'melody' || r.listen || r.locked || modalOpen()) return;
+    r.seq = r.seq || Array.from({ length: r.len }, () => Math.floor(Math.random() * 5));
+    r.pos = 0; r.listen = true; paintMelody(r);
+    r.seq.forEach((n, i) => setTimeout(() => {
+      if (onRound(r) && !modalOpen()) { Sound.note(L.notes[n].f); flashBar(n); }
+    }, 600 * i));
+    setTimeout(() => { r.listen = false; if (onRound(r)) paintMelody(r); }, 600 * r.len);
   }
   function pressNote(i) {
-    const r = cur(); if (!r) return; Sound.note(L.notes[i].f); flashBar(i);
+    const r = cur(); if (!r || r.listen || r.locked) return;
+    Sound.note(L.notes[i].f); flashBar(i);
     if (r.type === 'xylo') { G.taps++; if (G.taps >= 8) { const b = document.getElementById('okb'); if (b) b.disabled = false; } }
     if (r.type === 'melody' && r.seq && !r.listen && !r.locked) {
       if (i === r.seq[r.pos]) { r.pos++; if (r.pos >= r.seq.length) { r.locked = true; praise(); roundDone(); } }
-      else { G.err++; r.pos = 0; wrongMsg(); setTimeout(() => { if (cur() === r) r.seq.forEach((n, k) => setTimeout(() => { Sound.note(L.notes[n].f); flashBar(n); }, 600 * k)); }, 900); }
+      else {
+        G.err++; r.pos = 0; r.listen = true; wrongMsg();
+        setTimeout(() => { r.listen = false; if (onRound(r)) { paintMelody(r); playMelody(); } }, 900);
+      }
+      paintMelody(r);
     }
   }
   $app.addEventListener('pointerdown', e => {
-    const b = e.target.closest('[data-note]'); if (b) { e.preventDefault(); pressNote(+b.dataset.note); return; }
     const d = e.target.closest('#dj'); if (d) { e.preventDefault(); Sound.note(pick([98, 110, 131, 147])); d.classList.add('hit'); setTimeout(() => d.classList.remove('hit'), 90); G.taps++; if (G.taps >= 10) { const o = document.getElementById('okb'); if (o) o.disabled = false; } }
   });
   // ---- récré ----
@@ -555,6 +582,8 @@
     },
     snext() { if (!SES || SES.i + 1 >= SES.list.length) { SES = null; go('home'); return; } SES.i++; const [c, g] = SES.list[SES.i]; startGame(c, g, { age: Rules.adaptAge(P().age, SES.recent) }); },
     say() { const r = cur(); if (!r) return; if (r.type === 'story') say(storyLine(r.story, G.pg || 0)); else { say(r.ask); if (r.type === 'melody') playMelody(); armNudge(); } },
+    note(el) { pressNote(+el.dataset.note); },
+    melody() { playMelody(); },
     leave() { if (G && G.idx > 0) confirmBox(t('quit'), () => { hideModal(); go('cat', { id: G.cat }); }); else go('cat', { id: G.cat }); },
     yes() { const f = window._lumiYes; window._lumiYes = null; hideModal(); if (f) f(); },
     stay() { hideModal(); if (limitState().breakDue) { sinceBreak = 0; } },
@@ -590,7 +619,12 @@
       if (StoryQuiz.check(G.quiz, i)) {
         G.quizLocked = true; el.classList.add('good'); Sound.good(); if (m) m.set('happy', 1700);
         const l = I18n.pickLine('praise'); toast(l.text, true); say(l);
-        const tk = G; setTimeout(() => { if (G === tk && G.quizOn && S.screen === 'play') finish(); }, 1900);
+        const tk = G; setTimeout(() => {
+          if (G !== tk || !G.quizOn || S.screen !== 'play') return;
+          const next = G.quizNext;
+          G.quizNext = null;
+          if (next) showQuiz(next); else finish();
+        }, 1900);
       } else {   // mauvaise réponse : douceur, aucune pénalité (ni erreur comptée, ni étoile retirée) ; on peut réessayer ou passer
         el.classList.add('bad'); el.setAttribute('aria-disabled', 'true'); Sound.soft(); if (m) m.set('oops', 1500);
         const l = line('quiz.again'); toast(l.text, false); say(l);
@@ -699,7 +733,8 @@
     if (ls.lock) { Sound.stop(); hideModal(); go('lock'); }
     else if (ls.breakDue && !modalOpen()) {
       Sound.stop();
-      showModal(`<div class="dlg"><div style="width:110px;height:110px;margin:0 auto">${dr('lion')}</div><h1>${t('pause')}</h1><div class="btns"><button style="background:var(--turq)" data-act="go" data-to="home" aria-label="${t('pauseHome')}">${IC.home}</button><button style="background:var(--violet)" data-act="stay" aria-label="${t('pauseKeep')}">${IC.play}</button></div></div>`);
+      showModal(`<div class="dlg"><div class="pause-lumi" aria-hidden="true">${window.Mascot ? '' : dr('lion')}</div><h1>${t('pause')}</h1><div class="btns"><button style="background:var(--turq)" data-act="go" data-to="home" aria-label="${t('pauseHome')}">${IC.home}</button><button style="background:var(--violet)" data-act="stay" aria-label="${t('pauseKeep')}">${IC.play}</button></div></div>`);
+      if (window.Mascot) modalMascot = Mascot.mount($modal.querySelector('.pause-lumi'), { state: 'pause' });
       say(line('pause'));
     }
   }, 5000);

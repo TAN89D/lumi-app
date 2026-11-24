@@ -1,10 +1,10 @@
 // Lumi le lion : mascotte VECTORIELLE découpée en parties animables (corps, tête, oreilles, paupières, bouche, deux pattes).
 // Aucune photo : chaque partie est un élément SVG distinct, animé en CSS (transform / opacity uniquement, léger pour les téléphones modestes).
-// États : rest (repos), wave (salue), talk (parle), happy (bonne réponse), oops (erreur douce), cheer (récompense).
+// États : repos, salut, parole, réflexion, encouragement, réussite, fête et pause.
 // Animations coupées par « réduire les animations » (prefers-reduced-motion) et par le mode calme : la pose reste, l'image est statique.
 // Ce module ne dépend d'aucun autre ; il est testable seul (voir tests/tests.js).
 window.Mascot = (function () {
-  const STATES = ['rest', 'wave', 'talk', 'happy', 'oops', 'cheer'];
+  const STATES = ['rest', 'wave', 'talk', 'think', 'happy', 'oops', 'cheer', 'pause'];
   const INK = '#5a2a12', GOLD = '#ffc84a', MANE = '#b8631f', CREAM = '#fff0c8', EAR = '#e9a23a', SHIRT = '#e4572e';
 
   let uidN = 0;
@@ -48,8 +48,15 @@ window.Mascot = (function () {
           <path class="m m-rest" d="M88 123q12 10 24 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/>
           <ellipse class="m m-talk" cx="100" cy="127" rx="8" ry="8" fill="#7a2a1a" stroke="${INK}" stroke-width="2"/>
           <path class="m m-happy" d="M86 121q14 22 28 0z" fill="#7a2a1a" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
-          <path class="m m-oops" d="M91 127q9-5 18 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path class="m m-oops" d="M91 124q9 9 18 1" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <ellipse class="m m-pause" cx="100" cy="126" rx="6" ry="7" fill="${INK}"/>
         </g>
+      </g>
+      <g class="l-thought" fill="#fff6df" stroke="${INK}" stroke-width="2">
+        <circle cx="151" cy="56" r="4"/><circle cx="161" cy="46" r="5"/><circle cx="174" cy="30" r="9"/>
+      </g>
+      <g class="l-pause-sign" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round">
+        <path d="M151 52h9l-9 9h9M165 32h13l-13 13h13"/>
       </g>
     </svg>`;
   }
@@ -65,7 +72,10 @@ window.Mascot = (function () {
     if (!el) return null;
     opts = opts || {};
     el.innerHTML = markup(opts.state || 'rest');
-    const svg = el.querySelector('svg'); let timer = null, base = opts.state || 'rest', speaking = false;
+    const svg = el.querySelector('svg');
+    const base = STATES.includes(opts.state) ? opts.state : 'rest';
+    let timer = null, speaking = false;
+    const restingPose = () => speaking && ['rest', 'think'].includes(base) ? 'talk' : base;
     const ctl = {
       el: svg,
       get state() { return svg.getAttribute('data-state'); },
@@ -73,14 +83,15 @@ window.Mascot = (function () {
       set(state, holdMs) {
         if (!STATES.includes(state)) state = 'rest';
         clearTimeout(timer); svg.setAttribute('data-state', state);
-        if (holdMs) timer = setTimeout(() => { svg.setAttribute('data-state', speaking ? 'talk' : base); }, holdMs);
+        if (holdMs) timer = setTimeout(() => { svg.setAttribute('data-state', restingPose()); }, holdMs);
         return ctl;
       },
       // Synchronisation avec la narration : la bouche bouge tant que la voix parle (sauf pose de fête / d'erreur en cours).
       setSpeaking(on) {
         speaking = !!on; svg.setAttribute('data-speaking', on ? '1' : '0');
         const s = svg.getAttribute('data-state');
-        if (on && s === 'rest') svg.setAttribute('data-state', 'talk'); else if (!on && s === 'talk') svg.setAttribute('data-state', base);
+        if (on && ['rest', 'think'].includes(s)) svg.setAttribute('data-state', 'talk');
+        else if (!on && s === 'talk') svg.setAttribute('data-state', base);
         return ctl;
       },
       destroy() { clearTimeout(timer); live.delete(ctl); }

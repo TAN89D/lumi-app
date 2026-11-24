@@ -44,9 +44,23 @@ window.Games = (function () {
   // valeurs proches de la bonne réponse (pas de doublon, jamais négatives), par pas de `step`
   const nearby = (v, k, lo, hi, step) => { const s = new Set([v]); let g = 0; while (s.size < k && g++ < 80) { const c = v + between(1, 4) * step * (Math.random() < 0.5 ? -1 : 1); if (c >= lo && c <= hi) s.add(c); } for (let c = lo; s.size < k && c <= hi; c += step) s.add(c); return [...s]; };
   const numTiles = (v, k, lo, hi, step) => shuffle(nearby(v, k, lo, hi, step || 1)).map(x => ({ h: String(x), ok: x === v }));
-  const calc = (a, b, sym, res, op, k, step) => ({ type: 'choose', ask: line('ask.calc', { a, b, op: t('op.' + op) }), show: `<div class="calc">${a} ${sym} ${b} = <span class="q">?</span></div>`, choices: numTiles(res, k, Math.max(0, res - 8 * (step || 1)), res + 8 * (step || 1), step) });
-  const addG = (n, ctx) => { const mx = Math.min(cm(ctx), 50); return [0, 1, 2, 3].map(() => { const a = between(2, mx - 2), b = between(1, Math.min(mx - a, mx > 20 ? 30 : 12)); return calc(a, b, '+', a + b, 'plus', nch(n, ctx)); }); };
-  const subG = (n, ctx) => { const mx = Math.min(cm(ctx), 50); return [0, 1, 2, 3].map(() => { const a = between(6, mx), b = between(1, Math.min(a - 1, mx > 20 ? 30 : 12)); return calc(a, b, '−', a - b, 'minus', nch(n, ctx)); }); };
+  const calc = (a, b, sym, res, op, k, step = 1, max = Infinity) => ({ type: 'choose', ask: line('ask.calc', { a, b, op: t('op.' + op) }), show: `<div class="calc">${a} ${sym} ${b} = <span class="q">?</span></div>`, choices: numTiles(res, k, Math.max(0, res - 8 * step), Math.min(max, res + 8 * step), step) });
+  const addG = (n, ctx) => {
+    const max = cm(ctx);
+    return Array.from({ length: 4 }, (_, i) => {
+      const total = between(max === 100 && i >= 2 ? 51 : 3, max);
+      const a = between(2, total - 1);
+      return calc(a, total - a, '+', total, 'plus', nch(n, ctx), 1, max);
+    });
+  };
+  const subG = (n, ctx) => {
+    const max = cm(ctx);
+    return Array.from({ length: 4 }, (_, i) => {
+      const a = between(max === 100 && i >= 2 ? 51 : 6, max);
+      const b = between(1, Math.min(a - 1, max > 20 ? 30 : 12));
+      return calc(a, b, '−', a - b, 'minus', nch(n, ctx), 1, max);
+    });
+  };
   const tablesG = (n, ctx) => [0, 1, 2, 3].map(() => { const a = pick(cap(ctx).tables || [2, 5, 10]), b = between(2, 10); return calc(a, b, '×', a * b, 'times', nch(n, ctx), a); });
   const compareG = (n, ctx) => [0, 1, 2, 3].map((i) => {
     const mx = cm(ctx), k = n >= 3 ? 3 : 2, set = new Set(); while (set.size < k) set.add(between(1, mx));
@@ -73,6 +87,35 @@ window.Games = (function () {
     const w = y.word, first = w[0].toUpperCase(), pool = 'ABCDEFGHIJKLMNOPRSTUVZ'.split('').filter(c => c !== first);
     return { type: 'choose', ask: line('ask.missing'), show: `<span class="it">${dr(y.key)}</span><div class="word">_${w.slice(1)}</div>`, choices: shuffle(shuffle(pool).slice(0, nch(n, ctx) - 1).concat([first])).map(c => ({ h: c, ok: c === first })) };
   });
+  // Les choix reprennent le même son initial : l'enfant doit lire la syllabe entière.
+  const SYLLABLES = {
+    fr: [['moto', 'mo', 'ma', 'mi', 'mu'], ['lapin', 'la', 'le', 'li', 'lo'],
+      ['bateau', 'ba', 'bo', 'bi', 'bu'], ['tomate', 'to', 'ta', 'ti', 'tu'],
+      ['vélo', 'vé', 'va', 'vi', 'vo'], ['pirate', 'pi', 'pa', 'po', 'pu']],
+    en: [['robot', 'ro', 'ra', 're', 'ru'], ['tiger', 'ti', 'ta', 'to', 'tu'],
+      ['piano', 'pi', 'pa', 'po', 'pu'], ['zebra', 'ze', 'za', 'zi', 'zo'],
+      ['music', 'mu', 'ma', 'me', 'mo'], ['hotel', 'ho', 'ha', 'he', 'hi']]
+  };
+  const syllables = (n, ctx) => shuffle(SYLLABLES[I18n.lang()]).slice(0, 4).map(([word, first, ...distractors]) => ({
+    type: 'choose',
+    ask: line('ask.syllable', { word, id: word }),
+    show: `<div class="word">${word}</div>`,
+    choices: shuffle([first, ...shuffle(distractors).slice(0, nch(n, ctx) - 1)])
+      .map(syllable => ({ h: syllable, ok: syllable === first }))
+  }));
+  // L'atelier d'assemblage présente uniquement des mots à deux syllabes écrites.
+  const BUILD_WORDS = { fr: new Set(['moto', 'lapin', 'bateau', 'vélo']), en: new Set(['robot', 'tiger', 'zebra', 'music', 'hotel']) };
+  const buildWord = (n, ctx) => shuffle(SYLLABLES[I18n.lang()].filter(([word]) => BUILD_WORDS[I18n.lang()].has(word))).slice(0, 4).map(([word, first, ...distractors]) => {
+    const end = word.slice(first.length);
+    return {
+      type: 'choose',
+      ask: line('ask.buildword'),
+      show: `<div class="word word-parts"><span>${first}</span><span aria-hidden="true">+</span><span>${end}</span></div>`,
+      choices: shuffle([first, ...shuffle(distractors).slice(0, nch(n, ctx) - 1)])
+        .map(start => ({ h: `<span class="tx">${start}${end}</span>`, ok: start === first,
+          say: { id: I18n.lang() + ':word.' + word, text: word } }))
+    };
+  });
   const numseqG = (n, ctx) => [0, 1, 2, 3].map(() => {
     const step = pick(ctx && ctx.age >= 7 ? [2, 3, 5, 10] : [1, 2, 5, 10]), a = between(0, 10) * (step >= 5 ? 1 : 1), seq = [0, 1, 2, 3].map(i => a + i * step), res = a + 4 * step;
     return { type: 'choose', ask: line('ask.numseq'), show: seq.map(x => `<span class="it num">${x}</span>`).join('') + '<span class="q">?</span>', choices: numTiles(res, nch(n, ctx), Math.max(0, res - 3 * step), res + 3 * step, step) };
@@ -96,7 +139,61 @@ window.Games = (function () {
     type: 'choose', ask: line('ask.shape.find', { s: t('v.shape.' + s), id: s }),
     choices: shuffle(others(Object.keys(L.shapes), s, Math.max(n, 3))).map(k => ({ h: Art.shape(k, pick(COLS)), ok: k === s, say: line('say.shape', { s: t('v.shape.' + s), id: s }) }))
   }));
+  function symmetry(n, ctx) {
+    const half = ctx.age >= 8 ? 3 : 2;
+    const rows = ctx.age >= 7 ? 3 : 2;
+    const positions = Array.from({ length: rows * half }, (_, i) => i + 1);
+    return shuffle(positions).slice(0, 4).map(source => {
+      const row = Math.floor((source - 1) / half);
+      const col = (source - 1) % half;
+      const answer = (row + 1) * half - col;
+      const cells = positions.map((number, i) => {
+        const x = (i % half) * 44;
+        const y = Math.floor(i / half) * 44;
+        const right = x + half * 44;
+        return `<rect x="${x + 2}" y="${y + 2}" width="40" height="40" rx="7" fill="${number === source ? '#ffc84a' : '#fff6df'}"/>
+          ${number === source ? `<circle cx="${x + 22}" cy="${y + 22}" r="7" fill="currentColor"/>` : ''}
+          <rect x="${right + 2}" y="${y + 2}" width="40" height="40" rx="7" fill="#fff6df"/>
+          <text x="${right + 22}" y="${y + 22}">${number}</text>`;
+      }).join('');
+      return {
+        type: 'choose',
+        ask: line('ask.symmetry'),
+        show: `<svg class="symmetry-grid" viewBox="0 0 ${half * 88} ${rows * 44}" role="img" aria-label="${t('symmetry.grid', { row: row + 1, col: col + 1, half })}">
+          ${cells}<path d="M${half * 44} 0v${rows * 44}" stroke="currentColor" stroke-width="2" stroke-dasharray="5 4"/></svg>`,
+        choices: shuffle(others(positions, answer, nch(n, ctx))).map(value => ({ h: String(value), ok: value === answer }))
+      };
+    });
+  }
   const POOL = ['mango', 'banana', 'apple', 'coconut', 'fish', 'sun'];
+  const DIGITS = [1, 2, 3, 4];
+  const SUDOKU = [0, 1, 2, 3, 2, 3, 0, 1, 1, 2, 3, 0, 3, 0, 1, 2];
+  function sudoku(n, ctx) {
+    return shuffle(SUDOKU.map((_, i) => i)).slice(0, 4).map(target => {
+      const values = shuffle(DIGITS);
+      const grid = SUDOKU.map(i => values[i]);
+      const answer = grid[target];
+      const row = Math.floor(target / 4), col = target % 4;
+      const hidden = new Set([target]);
+      if (ctx.age >= 8) {
+        // Un trou en plus dans la ligne et la colonne, avec des valeurs distinctes.
+        const inRow = pick(grid.map((_, i) => i).filter(i => i !== target && Math.floor(i / 4) === row));
+        const inCol = pick(grid.map((_, i) => i).filter(i => i !== target && i % 4 === col && grid[i] !== grid[inRow]));
+        hidden.add(inRow);
+        hidden.add(inCol);
+      }
+      const rows = Array.from({ length: 4 }, (_, y) => `<tr>${Array.from({ length: 4 }, (_, x) => {
+        const i = y * 4 + x;
+        return `<td${i === target ? ' class="sudoku-target"' : ''}>${i === target ? '?' : hidden.has(i) ? '·' : grid[i]}</td>`;
+      }).join('')}</tr>`).join('');
+      return {
+        type: 'choose',
+        ask: line('ask.sudoku'),
+        show: `<table class="sudoku-grid" aria-label="${t('sudoku.grid', { row: row + 1, col: col + 1 })}"><tbody>${rows}</tbody></table>`,
+        choices: shuffle(others(DIGITS, answer, nch(n, ctx))).map(value => ({ h: String(value), ok: value === answer }))
+      };
+    });
+  }
   const suite = (n, ctx) => cap(ctx).suiteLen.map(p => {
     const ks = shuffle(POOL).slice(0, p.length), seq = [];
     for (let i = 0; i < p.length * 2 - 1; i++) seq.push(ks[p.charCodeAt(i % p.length) - 65]);
@@ -112,6 +209,60 @@ window.Games = (function () {
     type: 'choose', ask: line('ask.animal', { say: t('v.animalsay.' + id), id }),
     choices: shuffle(others(Object.keys(V.nature), id, n)).map(a => ({ h: dr(AKEY[a]), ok: a === id, say: line('say.animal', { a: t('v.animal.' + id), id }) }))
   }));
+  const SCIENCE = {
+    water: [
+      ['fall', 'cloud', 'rain', 'sun', 'river', 'sprout'],
+      ['heat', 'sun', 'evaporation', 'rain', 'cloud', 'river'],
+      ['cool', 'cloud', 'condensation', 'evaporation', 'river', 'sprout'],
+      ['flow', 'water', 'river', 'sun', 'cloud', 'evaporation']
+    ],
+    plants: [
+      ['drink', 'sprout', 'water', 'rock', 'sand', 'cloud'],
+      ['shine', 'leaf', 'sun', 'rock', 'sand', 'river'],
+      ['begin', 'sprout', 'seed', 'leaf', 'rock', 'cloud'],
+      ['roots', 'roots', 'rootsPart', 'leaf', 'flower', 'seed']
+    ]
+  };
+  const SCIENCE_ART = {
+    cloud: '<path d="M25 72a16 16 0 0 1-3-32 24 24 0 0 1 46-6 19 19 0 1 1 9 38Z" fill="#f6fbff" stroke="#517a9d" stroke-width="4"/>',
+    sprout: '<path d="M12 77q38-14 76 0v13H12z" fill="#a6683d"/><path d="M50 77V36" stroke="#356f30" stroke-width="5"/><path d="M50 50Q16 53 17 27q29-1 33 23m0-9Q52 17 79 17q-3 25-29 24" fill="#4eab47"/>',
+    roots: '<path d="M8 47h84v43H8z" fill="#a6683d"/><path d="M50 47v39m0-25-17 15m17-7 18 11" stroke="#ffe1ab" stroke-width="4"/><path d="M50 48V25" stroke="#356f30" stroke-width="5"/><path d="M50 33Q23 35 24 15q25 0 26 18m0-6Q52 9 73 9q-3 19-23 18" fill="#4eab47"/>'
+  };
+  const scienceArt = icon => SCIENCE_ART[icon] ? `<svg viewBox="0 0 100 100" aria-hidden="true">${SCIENCE_ART[icon]}</svg>` : dr(icon);
+  const science = topic => (n, ctx) => SCIENCE[topic].map(([id, icon, answer, ...wrong]) => ({
+    type: 'choose',
+    ask: line('science.' + id),
+    show: `<span class="it" aria-hidden="true">${scienceArt(icon)}</span>`,
+    choices: shuffle([answer, ...shuffle(wrong).slice(0, nch(n, ctx) - 1)]).map(value => ({
+      h: `<span class="tx">${t('science.' + value)}</span>`, ok: value === answer, say: line('science.' + value)
+    }))
+  }));
+  const FOOD_CHAINS = [
+    [['grass', 'zebra', 'lion'], 1, ['frog', 'lion', 'bird']],
+    [['leaf', 'caterpillar', 'bird'], 2, ['grass', 'leaf', 'zebra']],
+    [['grass', 'grasshopper', 'frog'], 1, ['zebra', 'grass', 'leaf']],
+    [['grass', 'zebra', 'lion'], 0, ['lion', 'zebra', 'bird']]
+  ];
+  const FOOD_ART = {
+    grass: '<path d="M21 86Q20 55 12 33q25 13 32 53M43 86Q37 44 53 15q10 34 8 71m-4 0q7-35 32-49-12 23-14 49" fill="#459d42"/><path d="M12 86h76" stroke="#94633e" stroke-width="6" stroke-linecap="round"/>',
+    caterpillar: '<path d="M11 76Q46 48 90 70" stroke="#44853a" stroke-width="8" stroke-linecap="round"/><g fill="#87c850" stroke="#397342" stroke-width="3"><circle cx="26" cy="59" r="11"/><circle cx="45" cy="53" r="12"/><circle cx="64" cy="53" r="12"/><circle cx="82" cy="47" r="13"/></g><path d="m78 34-3-10m11 10 5-9" stroke="#397342" stroke-width="3"/><circle cx="86" cy="45" r="2.5" fill="#192620"/>',
+    bird: '<path d="M14 55 6 75l25-8" fill="#35528a"/><ellipse cx="45" cy="61" rx="29" ry="19" fill="#528bdd"/><ellipse cx="39" cy="63" rx="16" ry="12" fill="#35528a"/><circle cx="69" cy="43" r="18" fill="#528bdd"/><path d="m84 43 15 5-16 8" fill="#f2a830"/><circle cx="74" cy="40" r="3" fill="#241b16"/>',
+    grasshopper: '<path d="M34 64 19 83m29-20 15-20 12 40M76 34l11-19m-16 16 5-19" fill="none" stroke="#497336" stroke-width="4" stroke-linecap="round"/><ellipse cx="43" cy="58" rx="29" ry="11" transform="rotate(-20 43 58)" fill="#83bf49"/><circle cx="73" cy="41" r="13" fill="#74ab40"/><circle cx="77" cy="38" r="3" fill="#19351e"/>',
+    frog: '<ellipse cx="50" cy="70" rx="33" ry="16" fill="#70ad43"/><circle cx="32" cy="40" r="15" fill="#83bc4c"/><circle cx="68" cy="40" r="15" fill="#83bc4c"/><ellipse cx="50" cy="55" rx="34" ry="23" fill="#83bc4c"/><circle cx="32" cy="39" r="4" fill="#24351d"/><circle cx="68" cy="39" r="4" fill="#24351d"/><path d="M37 57q13 13 26 0" fill="none" stroke="#35552c" stroke-width="3" stroke-linecap="round"/>'
+  };
+  const foodLabel = key => t('chain.' + key);
+  const foodFigure = key => `<span class="food-figure">${FOOD_ART[key] ? `<svg viewBox="0 0 100 100" aria-hidden="true">${FOOD_ART[key]}</svg>` : `<span aria-hidden="true">${dr(key)}</span>`}<span>${foodLabel(key)}</span></span>`;
+  const foodChain = (n, ctx) => FOOD_CHAINS.map(([chain, missing, wrong]) => {
+    const answer = chain[missing];
+    return {
+      type: 'choose',
+      ask: line('ask.chain'),
+      show: `<ol class="food-chain" role="list" aria-label="${t('chain.diagram')}">${chain.map((key, i) => `<li>${i === missing ? `<span class="food-missing" role="img" aria-label="${t('chain.missing')}">?</span>` : foodFigure(key)}</li>`).join('')}</ol>`,
+      choices: shuffle([answer, ...shuffle(wrong).slice(0, nch(n, ctx) - 1)]).map(key => ({
+        h: foodFigure(key), ok: key === answer, say: line('chain.' + key)
+      }))
+    };
+  });
   const flags = n => shuffle(Object.keys(V.countries)).slice(0, 4).map(id => ({
     type: 'choose', ask: line('ask.flag', { of: t('v.countryof.' + id), name: t('v.country.' + id), id }),
     choices: shuffle(others(Object.keys(V.countries), id, n)).map(c => ({ h: Art.flag(V.countries[c].flag), ok: c === id, say: line('say.country', { name: t('v.country.' + id), id }) }))
@@ -162,18 +313,19 @@ window.Games = (function () {
   // lvl : niveau d'âge minimal conseillé (3, 4 ou 5) ; skills : voir skills.js
   const G = (id, ic, make, lvl) => ({ id, ic, make, lvl: lvl || 3 });
   const CATS = [
-    { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4), G('missing', 'lion', missingG, 6)] },
+    { id: 'letters', c: 'turq', art: 'c_letters', games: [G('listen', 'lion', letterListen), G('drag', 'banana', letterDrag, 4), G('trace', 'c_art', traceL, 4), G('missing', 'lion', missingG, 6), G('syllables', 'c_letters', syllables, 5), G('buildword', 'c_letters', buildWord, 6)] },
     { id: 'numbers', c: 'sun', art: 'c_numbers', games: [G('count', 'mango', counting), G('match', 'mango', qtyMatch), G('basket', 'basket', fill), G('plus', 'apple', plus, 5), G('trace', 'c_art', traceN, 4),
       G('add', 'apple', addG, 6), G('sub', 'banana', subG, 6), G('compare', 'star', compareG, 6), G('tables', 'coconut', tablesG, 7), G('money', 'sun', moneyG, 7), G('clock', 'sun', clockG, 7)] },
     { id: 'colors', c: 'coral', art: 'c_colors', games: [G('touch', 'c_colors', colourTouch), G('sort', 'leaf', colourSort, 4), G('mix', 'fish', colourMix, 5)] },
-    { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind)] },
-    { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6)] },
+    { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind), G('symmetry', 'c_shapes', symmetry, 6)] },
+    { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6), G('sudoku', 'c_logic', sudoku, 7)] },
     { id: 'art', c: 'turq', art: 'c_art', games: [G('soleil', 'sun', tpl('soleil')), G('case', 'house', tpl('case')), G('poisson', 'fish', tpl('poisson')), G('baobab', 'tree', tpl('baobab')),
       G('free', 'c_art', () => [{ type: 'free', ask: line('ask.free') }])] },
     { id: 'music', c: 'violet', art: 'c_music', games: [G('xylo', 'c_music', () => [{ type: 'xylo', ask: line('ask.xylo') }]), G('drum', 'drum', () => [{ type: 'drum', ask: line('ask.drum') }]),
       G('melody', 'star', (n, ctx) => cap(ctx).melody.map(len => ({ type: 'melody', len, ask: line('ask.melody') })), 4)] },
     { id: 'countries', c: 'coral', art: 'c_countries', games: [G('flags', 'c_countries', flags, 4), G('memory', 'star', memory('flag', 3), 4), G('capitals', 'c_countries', capitalsG, 7)] },
-    { id: 'nature', c: 'leaf', art: 'c_nature', games: [G('animals', 'elephant', animals), G('habitat', 'parrot', habitat, 4), G('memory', 'monkey', memory('draw', 4), 4)] },
+    { id: 'nature', c: 'leaf', art: 'c_nature', games: [G('animals', 'elephant', animals), G('habitat', 'parrot', habitat, 4), G('memory', 'monkey', memory('draw', 4), 4),
+      G('plants', 'leaf', science('plants'), 5), G('water', 'water', science('water'), 6), G('chain', 'leaf', foodChain, 6)] },
     { id: 'stories', c: 'sun', art: 'c_stories', games: L.stories.map(s => ({ id: s.id, title: s.title, e: s.cover, lvl: 3, make: () => { const st = localStory(s); return [{ type: 'story', story: st, ask: { id: st.code + ':story.' + s.id + '.title', text: st.title, lang: st.speech } }]; } })) }
   ];
   // Histoires : version de la langue courante si elle existe (texte, titre, langue de la voix) ; sinon le français d'origine.

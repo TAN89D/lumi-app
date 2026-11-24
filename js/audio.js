@@ -100,19 +100,28 @@ window.Sound = (function () {
   // État « la voix parle » : la mascotte synchronise sa bouche dessus (voir mascot.js). Aucune donnée n'est conservée.
   let spkCb = null, isSpeaking = false;
   const spk = v => { if (isSpeaking === v) return; isSpeaking = v; try { spkCb && spkCb(v); } catch (e) {} };
-  function playClip(url) { try { if (playing) playing.pause(); playing = new Audio(url); playing.volume = vol(); playing.onplay = () => spk(true); playing.onended = playing.onpause = () => spk(false); playing.play().catch(() => {}); } catch (e) {} }
+  function playClip(url, request) {
+    try {
+      const clip = playing = new Audio(url);
+      clip.volume = vol();
+      const active = value => { if (request === seq) spk(value); };
+      clip.onplaying = () => active(true);
+      clip.onended = clip.onpause = clip.onerror = () => active(false);
+      clip.play().catch(() => active(false));
+    } catch (e) {}
+  }
   let onMiss = null, seq = 0;
 
   // l = { id, text, lang? } (phrase localisée) ou simple chaîne
   function speak(l) {
     const s = st(); if (!s.voice || !l) return;
-    try { if (playing) playing.pause(); } catch (e) {}   // jamais deux narrations en même temps (enregistrement d'un adulte + voix de synthèse)
+    stop();
+    const my = seq;
     const text = typeof l === 'string' ? l : l.text, url = clipFor(l);
-    if (url) { try { synth && synth.cancel(); } catch (e) {} playClip(url); return; }
+    if (url) { playClip(url, my); return; }
     if (s.rec && onMiss) { onMiss(typeof l === 'string' ? { id: norm(l), text: l } : l); return; }
     const lang = (typeof l === 'object' && l.lang) ? l.lang : I18n.speech();
     if (!synth) { warnNoVoice(lang); return; }
-    const my = ++seq;
     const ready = tries => {
       if (my !== seq) return;
       if (voiceLang !== lang) { voice = null; refresh(); }
