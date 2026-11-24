@@ -4,6 +4,8 @@
 window.Home = (function () {
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const IMG = 'assets/img/';
+  // Logo A (identité validée) : image optimisée, accessible (alt « LUMI »), avec texte de secours ; le slogan n'est JAMAIS dans l'image.
+  const logo = () => `<h1 class="logo logo-wrap"><img class="logo-img" src="${IMG}logo-lumi-720.webp" srcset="${IMG}logo-lumi-480.webp 480w, ${IMG}logo-lumi-720.webp 720w" sizes="(max-width:520px) 74vw, 380px" width="720" height="496" alt="LUMI" decoding="async" fetchpriority="high" onerror="this.replaceWith(document.createTextNode('LUMI'))"></h1>`;
 
   // Avatar du profil : portraits illustrés pour Abdou et la fillette, dessin vectoriel pour les autres.
   function avatar(x, av) {
@@ -32,7 +34,7 @@ window.Home = (function () {
 
   // ----- écran de bienvenue (affiché une seule fois par ouverture de l'application) -----
   const welcome = x => `<div class="welcome">
-      <div class="w-logo"><h1 class="logo">LUMI</h1><div class="sign">${esc(x.t('tagline'))}</div></div>
+      <div class="w-logo">${logo()}<div class="sign">${esc(x.t('tagline'))}</div></div>
       <img class="w-chars" src="${IMG}hero-941.jpg" srcset="${IMG}hero-640.jpg 640w, ${IMG}hero-941.jpg 941w" sizes="(max-width:760px) 100vw, 760px" width="941" height="435" alt="" decoding="async" fetchpriority="high">
       <section class="w-msg">${x.mascot ? `<div class="mascot-slot w-lumi" data-state="wave" role="img" aria-label="${esc(x.t('mascot.alt'))}"></div>` : ''}<div class="w-txt"><b>${esc(x.t('welcome.title'))}</b><span>${esc(x.t('welcome.sub'))}</span></div></section>
       <button class="h-start" data-act="begin"><span class="ic">${x.IC.play}</span>${esc(x.t('btn.start'))}</button>
@@ -62,7 +64,7 @@ window.Home = (function () {
           <button class="h-parents" data-act="go" data-to="gate" aria-label="${esc(x.t('btn.parentsArea'))}"><span class="ic">${x.IC.people}</span><span>${esc(x.t('btn.parents'))}</span></button>
           <button class="h-profile" data-act="profiles" aria-label="${esc(x.t('btn.profile'))}"><span class="av">${avatar(x, x.avatar)}</span><b>${name}</b><span class="caret">${x.IC.caret}</span></button>
         </div>
-        <div class="h-logo"><h1 class="logo">LUMI</h1><div class="sign">${esc(x.t('tagline'))}</div></div>
+        <div class="h-logo">${logo()}<div class="sign">${esc(x.t('tagline'))}</div></div>
         <div class="h-age" role="img" aria-label="${esc(x.t('p.age'))} : ${esc(x.t('badge.age', { n: p.age }))}"><b>${esc(x.t('badge.age', { n: p.age }))}</b></div>
         <img class="h-chars" src="${IMG}hero-941.jpg" srcset="${IMG}hero-640.jpg 640w, ${IMG}hero-941.jpg 941w" sizes="(max-width:760px) 100vw, 760px" width="941" height="435" alt="" decoding="async" fetchpriority="high">
       </section>
