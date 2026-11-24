@@ -5,13 +5,13 @@ const { test, expect } = require('@playwright/test');
 const openHome = async page => { await page.goto('/index.html'); await page.locator('[data-act="begin"]').click(); };
 
 test('Lumi salue à l’accueil et apparaît dans un jeu de glisser-déposer', async ({ page }) => {
-  await page.clock.install();
   await openHome(page);
   const mascot = page.locator('.h-lumi .lumi');
   await expect(mascot).toBeVisible();
-  await page.clock.runFor(3200);
+  const salute = page.getByRole('button', { name: 'Salue Lumi' });
+  await salute.scrollIntoViewIfNeeded();
   await expect(mascot).toHaveAttribute('data-state', 'rest');
-  await page.getByRole('button', { name: 'Salue Lumi' }).click();
+  await salute.click();
   await expect(mascot).toHaveAttribute('data-state', 'wave');
   await page.evaluate(() => LumiApp.startGame('letters', 'drag'));
   await expect(page.locator('.guide-compact .g-lumi .lumi')).toBeVisible();
