@@ -286,6 +286,27 @@
     const numberGames = Games.CATS.find(c => c.id === 'numbers').games;
     const mirrorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'symmetry');
     const inspect = document.createElement('div');
+    const geography = Games.CATS.find(c => c.id === 'countries').games.find(g => g.id === 'map');
+    const countryIds = Object.keys(LUMI.vocab.countries);
+    for (const language of ['fr', 'en']) {
+      I18n.setLang(language);
+      ok(countryIds.every(id => {
+        const clue = I18n.t('map.clue.' + id);
+        inspect.innerHTML = AfricaMap.draw(id, I18n.t('map.description'));
+        return !clue.startsWith('map.clue.') && inspect.querySelectorAll('.africa-map-target').length === 1;
+      }), 'les dix pays ont un tracé SVG et un indice en ' + language);
+      for (const age of [6, 7, 8]) {
+        const rounds = geography.make(3, { age });
+        ok(rounds.length === 4 && rounds.every(round => {
+          inspect.innerHTML = round.show;
+          const answer = round.choices.find(choice => choice.ok);
+          return round.choices.length === (age === 6 ? 3 : 4) && round.choices.filter(c => c.ok).length === 1
+            && round.choices.every(c => !!c.say.text) && !!answer.say.id
+            && inspect.querySelectorAll('.africa-map-target').length === 1 && !!inspect.querySelector('details p').textContent;
+        }), 'carte : une cible et des choix cohérents (' + age + ' ans, ' + language + ')');
+      }
+    }
+    I18n.setLang('fr');
     const rhymeGame = Games.CATS.find(c => c.id === 'letters').games.find(g => g.id === 'rhyme');
     const shapeColorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'shapecolor');
     for (const language of ['fr', 'en']) {

@@ -169,6 +169,20 @@ window.Games = (function () {
     type: 'choose', ask: line('ask.capital', { of: t('v.countryof.' + id), name: t('v.country.' + id) }), show: `<div class="flagbox">${Art.flag(V.countries[id].flag)}</div>`,
     choices: shuffle(others(Object.keys(CAPITALS), id, nch(n, ctx))).map(c => ({ h: `<span class="tx">${CAPITALS[c]}</span>`, ok: c === id }))
   }));
+  const mapCountries = (n, ctx) => {
+    const younger = ctx.age <= 6;
+    const pool = younger ? ['mali', 'senegal', 'guinee', 'civ', 'ghana', 'burkina'] : Object.keys(CAPITALS);
+    return shuffle(pool).slice(0, 4).map(id => ({
+      type: 'choose',
+      ask: line('ask.countryMap'),
+      show: `<div class="map-exercise">${AfricaMap.draw(id, t('map.description'))}
+        <details class="map-clue"><summary>${t('map.hint')}</summary><p>${t('map.clue.' + id)}</p></details></div>`,
+      choices: shuffle(others(pool, id, younger ? n : nch(n, ctx))).map(key => {
+        const name = t('v.country.' + key);
+        return { h: `<span class="tx">${name}</span>`, ok: key === id, say: line('say.country', { name, id: key }) };
+      })
+    }));
+  };
   const colourTouch = n => shuffle(Object.keys(V.colors)).slice(0, 4).map(id => ({
     type: 'choose', ask: line('ask.color.touch', { c: t('v.color.' + id), id }),
     choices: shuffle(others(Object.keys(V.colors), id, n)).map(c => ({ h: Art.swatch(V.colors[c].hex, V.colors[c].pat), ok: c === id, say: line('say.color', { c: t('v.color.' + id), id }) }))
@@ -388,7 +402,7 @@ window.Games = (function () {
       G('free', 'c_art', () => [{ type: 'free', ask: line('ask.free') }])] },
     { id: 'music', c: 'violet', art: 'c_music', games: [G('xylo', 'c_music', () => [{ type: 'xylo', ask: line('ask.xylo') }]), G('drum', 'drum', () => [{ type: 'drum', ask: line('ask.drum') }]),
       G('melody', 'star', (n, ctx) => cap(ctx).melody.map(len => ({ type: 'melody', len, ask: line('ask.melody') })), 4), G('rhythm', 'drum', rhythm, 6)] },
-    { id: 'countries', c: 'coral', art: 'c_countries', games: [G('flags', 'c_countries', flags, 4), G('memory', 'star', memory('flag', 3), 4), G('capitals', 'c_countries', capitalsG, 7)] },
+    { id: 'countries', c: 'coral', art: 'c_countries', games: [G('flags', 'c_countries', flags, 4), G('memory', 'star', memory('flag', 3), 4), G('capitals', 'c_countries', capitalsG, 7), G('map', 'c_countries', mapCountries, 6)] },
     { id: 'nature', c: 'leaf', art: 'c_nature', games: [G('animals', 'elephant', animals), G('habitat', 'parrot', habitat, 4), G('memory', 'monkey', memory('draw', 4), 4),
       G('plants', 'leaf', science('plants'), 5), G('water', 'water', science('water'), 6), G('chain', 'leaf', foodChain, 6)] },
     { id: 'stories', c: 'sun', art: 'c_stories', games: L.stories.map(s => ({ id: s.id, title: s.title, e: s.cover, lvl: 3, make: () => { const st = localStory(s); return [{ type: 'story', story: st, ask: { id: st.code + ':story.' + s.id + '.title', text: st.title, lang: st.speech } }]; } })) }
