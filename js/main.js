@@ -242,6 +242,7 @@
   const palette = () => `<div class="palette">${Object.values(V.colors).map(c => c.hex).concat(['#ffffff']).map((h, i) => `<button class="pal ${i === 0 ? 'on' : ''}" data-act="pal" data-c="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}</div>`;
   function body(r) {
     if (r.type === 'choose') return `${r.show ? `<div class="show">${r.show}</div>` : ''}${r.rhythm ? rhythmControls() : ''}
+      ${r.listen ? `<button class="btn sun listen-options" data-act="listen-options">${t('rhyme.listen')}</button>` : ''}
       <div class="tiles t${r.choices.length}">${r.choices.map((c, i) => `<button class="tile" data-act="pick" data-i="${i}" ${r.rhythm && !r.rhythmReady ? 'disabled' : ''}>${c.h}</button>`).join('')}</div>`;
     if (r.type === 'drag') {
       const slots = r.scene ? `<div class="dz scene">${r.slots.map(s => `<div class="slot pos" data-key="${s.key}" style="${s.pos}">${s.h}</div>`).join('')}</div>`
@@ -623,6 +624,7 @@
     snext() { if (!SES || SES.i + 1 >= SES.list.length) { SES = null; go('home'); return; } SES.i++; const [c, g] = SES.list[SES.i]; startGame(c, g, { age: Rules.adaptAge(P().age, SES.recent) }); },
     say() { const r = cur(); if (!r || r.rhythmPlaying) return; if (r.type === 'story') say(storyLine(r.story, G.pg || 0)); else { say(r.ask); if (r.type === 'melody') playMelody(); armNudge(); } },
     rhythm() { playRhythm(); },
+    'listen-options'() { const r = cur(); if (r.listen && !r.locked) { say(r.listen); armNudge(); } },
     note(el) { pressNote(+el.dataset.note); },
     melody() { playMelody(); },
     leave() { if (G && G.idx > 0) confirmBox(t('quit'), () => { hideModal(); go('cat', { id: G.cat }); }); else go('cat', { id: G.cat }); },
