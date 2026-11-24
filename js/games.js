@@ -103,7 +103,9 @@ window.Games = (function () {
     choices: shuffle([first, ...shuffle(distractors).slice(0, nch(n, ctx) - 1)])
       .map(syllable => ({ h: syllable, ok: syllable === first }))
   }));
-  const buildWord = (n, ctx) => shuffle(SYLLABLES[I18n.lang()]).slice(0, 4).map(([word, first, ...distractors]) => {
+  // L'atelier d'assemblage présente uniquement des mots à deux syllabes écrites.
+  const BUILD_WORDS = { fr: new Set(['moto', 'lapin', 'bateau', 'vélo']), en: new Set(['robot', 'tiger', 'zebra', 'music', 'hotel']) };
+  const buildWord = (n, ctx) => shuffle(SYLLABLES[I18n.lang()].filter(([word]) => BUILD_WORDS[I18n.lang()].has(word))).slice(0, 4).map(([word, first, ...distractors]) => {
     const end = word.slice(first.length);
     return {
       type: 'choose',
