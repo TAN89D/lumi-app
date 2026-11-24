@@ -44,9 +44,23 @@ window.Games = (function () {
   // valeurs proches de la bonne réponse (pas de doublon, jamais négatives), par pas de `step`
   const nearby = (v, k, lo, hi, step) => { const s = new Set([v]); let g = 0; while (s.size < k && g++ < 80) { const c = v + between(1, 4) * step * (Math.random() < 0.5 ? -1 : 1); if (c >= lo && c <= hi) s.add(c); } for (let c = lo; s.size < k && c <= hi; c += step) s.add(c); return [...s]; };
   const numTiles = (v, k, lo, hi, step) => shuffle(nearby(v, k, lo, hi, step || 1)).map(x => ({ h: String(x), ok: x === v }));
-  const calc = (a, b, sym, res, op, k, step) => ({ type: 'choose', ask: line('ask.calc', { a, b, op: t('op.' + op) }), show: `<div class="calc">${a} ${sym} ${b} = <span class="q">?</span></div>`, choices: numTiles(res, k, Math.max(0, res - 8 * (step || 1)), res + 8 * (step || 1), step) });
-  const addG = (n, ctx) => { const mx = Math.min(cm(ctx), 50); return [0, 1, 2, 3].map(() => { const a = between(2, mx - 2), b = between(1, Math.min(mx - a, mx > 20 ? 30 : 12)); return calc(a, b, '+', a + b, 'plus', nch(n, ctx)); }); };
-  const subG = (n, ctx) => { const mx = Math.min(cm(ctx), 50); return [0, 1, 2, 3].map(() => { const a = between(6, mx), b = between(1, Math.min(a - 1, mx > 20 ? 30 : 12)); return calc(a, b, '−', a - b, 'minus', nch(n, ctx)); }); };
+  const calc = (a, b, sym, res, op, k, step = 1, max = Infinity) => ({ type: 'choose', ask: line('ask.calc', { a, b, op: t('op.' + op) }), show: `<div class="calc">${a} ${sym} ${b} = <span class="q">?</span></div>`, choices: numTiles(res, k, Math.max(0, res - 8 * step), Math.min(max, res + 8 * step), step) });
+  const addG = (n, ctx) => {
+    const max = cm(ctx);
+    return Array.from({ length: 4 }, (_, i) => {
+      const total = between(max === 100 && i >= 2 ? 51 : 3, max);
+      const a = between(2, total - 1);
+      return calc(a, total - a, '+', total, 'plus', nch(n, ctx), 1, max);
+    });
+  };
+  const subG = (n, ctx) => {
+    const max = cm(ctx);
+    return Array.from({ length: 4 }, (_, i) => {
+      const a = between(max === 100 && i >= 2 ? 51 : 6, max);
+      const b = between(1, Math.min(a - 1, max > 20 ? 30 : 12));
+      return calc(a, b, '−', a - b, 'minus', nch(n, ctx), 1, max);
+    });
+  };
   const tablesG = (n, ctx) => [0, 1, 2, 3].map(() => { const a = pick(cap(ctx).tables || [2, 5, 10]), b = between(2, 10); return calc(a, b, '×', a * b, 'times', nch(n, ctx), a); });
   const compareG = (n, ctx) => [0, 1, 2, 3].map((i) => {
     const mx = cm(ctx), k = n >= 3 ? 3 : 2, set = new Set(); while (set.size < k) set.add(between(1, mx));
@@ -112,6 +126,32 @@ window.Games = (function () {
     type: 'choose', ask: line('ask.shape.find', { s: t('v.shape.' + s), id: s }),
     choices: shuffle(others(Object.keys(L.shapes), s, Math.max(n, 3))).map(k => ({ h: Art.shape(k, pick(COLS)), ok: k === s, say: line('say.shape', { s: t('v.shape.' + s), id: s }) }))
   }));
+  function symmetry(n, ctx) {
+    const half = ctx.age >= 8 ? 3 : 2;
+    const rows = ctx.age >= 7 ? 3 : 2;
+    const positions = Array.from({ length: rows * half }, (_, i) => i + 1);
+    return shuffle(positions).slice(0, 4).map(source => {
+      const row = Math.floor((source - 1) / half);
+      const col = (source - 1) % half;
+      const answer = (row + 1) * half - col;
+      const cells = positions.map((number, i) => {
+        const x = (i % half) * 44;
+        const y = Math.floor(i / half) * 44;
+        const right = x + half * 44;
+        return `<rect x="${x + 2}" y="${y + 2}" width="40" height="40" rx="7" fill="${number === source ? '#ffc84a' : '#fff6df'}"/>
+          ${number === source ? `<circle cx="${x + 22}" cy="${y + 22}" r="7" fill="currentColor"/>` : ''}
+          <rect x="${right + 2}" y="${y + 2}" width="40" height="40" rx="7" fill="#fff6df"/>
+          <text x="${right + 22}" y="${y + 22}">${number}</text>`;
+      }).join('');
+      return {
+        type: 'choose',
+        ask: line('ask.symmetry'),
+        show: `<svg class="symmetry-grid" viewBox="0 0 ${half * 88} ${rows * 44}" role="img" aria-label="${t('symmetry.grid', { row: row + 1, col: col + 1, half })}">
+          ${cells}<path d="M${half * 44} 0v${rows * 44}" stroke="currentColor" stroke-width="2" stroke-dasharray="5 4"/></svg>`,
+        choices: shuffle(others(positions, answer, nch(n, ctx))).map(value => ({ h: String(value), ok: value === answer }))
+      };
+    });
+  }
   const POOL = ['mango', 'banana', 'apple', 'coconut', 'fish', 'sun'];
   const suite = (n, ctx) => cap(ctx).suiteLen.map(p => {
     const ks = shuffle(POOL).slice(0, p.length), seq = [];
@@ -182,7 +222,7 @@ window.Games = (function () {
     { id: 'numbers', c: 'sun', art: 'c_numbers', games: [G('count', 'mango', counting), G('match', 'mango', qtyMatch), G('basket', 'basket', fill), G('plus', 'apple', plus, 5), G('trace', 'c_art', traceN, 4),
       G('add', 'apple', addG, 6), G('sub', 'banana', subG, 6), G('compare', 'star', compareG, 6), G('tables', 'coconut', tablesG, 7), G('money', 'sun', moneyG, 7), G('clock', 'sun', clockG, 7)] },
     { id: 'colors', c: 'coral', art: 'c_colors', games: [G('touch', 'c_colors', colourTouch), G('sort', 'leaf', colourSort, 4), G('mix', 'fish', colourMix, 5)] },
-    { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind)] },
+    { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind), G('symmetry', 'c_shapes', symmetry, 6)] },
     { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6)] },
     { id: 'art', c: 'turq', art: 'c_art', games: [G('soleil', 'sun', tpl('soleil')), G('case', 'house', tpl('case')), G('poisson', 'fish', tpl('poisson')), G('baobab', 'tree', tpl('baobab')),
       G('free', 'c_art', () => [{ type: 'free', ask: line('ask.free') }])] },

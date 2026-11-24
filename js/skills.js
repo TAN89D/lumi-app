@@ -11,7 +11,7 @@ window.Skills = (function () {
     'letters:syllables': ['letters.syllables'],
     'numbers:count': ['numbers.count'], 'numbers:match': ['numbers.count'], 'numbers:basket': ['numbers.count', 'numbers.compose'], 'numbers:plus': ['numbers.compose'], 'numbers:trace': ['numbers.write'], 'numbers:add': ['numbers.compose'], 'numbers:sub': ['numbers.compose'], 'numbers:compare': ['numbers.count'], 'numbers:tables': ['numbers.compose'], 'numbers:money': ['numbers.compose'], 'numbers:clock': ['numbers.count'], 'letters:missing': ['letters.recognize'], 'logic:numseq': ['logic.pattern'], 'countries:capitals': ['world.geo'],
     'colors:touch': ['colors.name'], 'colors:sort': ['colors.name'], 'colors:mix': ['colors.mix'],
-    'shapes:drag': ['shapes.recognize'], 'shapes:find': ['shapes.recognize'], 'shapes:build': ['shapes.build', 'logic.spatial'],
+    'shapes:drag': ['shapes.recognize'], 'shapes:find': ['shapes.recognize'], 'shapes:build': ['shapes.build', 'logic.spatial'], 'shapes:symmetry': ['shapes.symmetry'],
     'logic:suite': ['logic.pattern'], 'logic:odd': ['logic.classify'], 'logic:puzzle': ['logic.spatial'], 'logic:memory': ['logic.memory'],
     'art:soleil': ['art.create'], 'art:case': ['art.create'], 'art:poisson': ['art.create'], 'art:baobab': ['art.create'], 'art:free': ['art.create'],
     'music:xylo': ['music.rhythm'], 'music:drum': ['music.rhythm'], 'music:melody': ['music.rhythm', 'logic.memory'],
