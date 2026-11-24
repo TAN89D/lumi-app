@@ -13,12 +13,12 @@ window.Skills = (function () {
     'numbers:count': ['numbers.count'], 'numbers:match': ['numbers.count'], 'numbers:basket': ['numbers.count', 'numbers.compose'], 'numbers:plus': ['numbers.compose'], 'numbers:trace': ['numbers.write'], 'numbers:add': ['numbers.compose'], 'numbers:sub': ['numbers.compose'], 'numbers:compare': ['numbers.count'], 'numbers:tables': ['numbers.compose'], 'numbers:money': ['numbers.compose'], 'numbers:clock': ['numbers.count'], 'letters:missing': ['letters.recognize'], 'logic:numseq': ['logic.pattern'], 'countries:capitals': ['world.geo'],
     'colors:touch': ['colors.name'], 'colors:sort': ['colors.name'], 'colors:mix': ['colors.mix'],
     'shapes:drag': ['shapes.recognize'], 'shapes:find': ['shapes.recognize'], 'shapes:build': ['shapes.build', 'logic.spatial'], 'shapes:symmetry': ['shapes.symmetry'],
-    'logic:suite': ['logic.pattern'], 'logic:odd': ['logic.classify'], 'logic:puzzle': ['logic.spatial'], 'logic:memory': ['logic.memory'],
+    'logic:suite': ['logic.pattern'], 'logic:odd': ['logic.classify'], 'logic:puzzle': ['logic.spatial'], 'logic:memory': ['logic.memory'], 'logic:sudoku': ['logic.sudoku'],
     'art:soleil': ['art.create'], 'art:case': ['art.create'], 'art:poisson': ['art.create'], 'art:baobab': ['art.create'], 'art:free': ['art.create'],
     'music:xylo': ['music.rhythm'], 'music:drum': ['music.rhythm'], 'music:melody': ['music.rhythm', 'logic.memory'],
     'countries:flags': ['world.geo'], 'countries:memory': ['world.geo', 'logic.memory'],
     'nature:animals': ['world.nature'], 'nature:habitat': ['world.nature', 'logic.classify'], 'nature:memory': ['world.nature', 'logic.memory'],
-    'nature:plants': ['nature.plants'], 'nature:water': ['nature.water']
+    'nature:plants': ['nature.plants'], 'nature:water': ['nature.water'], 'nature:chain': ['nature.chain']
   };
   const ALL = Array.from(new Set([].concat.apply([], Object.values(MAP)).concat(['language.listen'])));
   const WEIGHT = { 0: 0.2, 1: 0.5, 2: 0.8, 3: 1 };   // 1 étoile = 50 %, 2 étoiles = 80 %

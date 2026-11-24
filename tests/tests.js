@@ -286,6 +286,35 @@
     const numberGames = Games.CATS.find(c => c.id === 'numbers').games;
     const mirrorGame = Games.CATS.find(c => c.id === 'shapes').games.find(g => g.id === 'symmetry');
     const inspect = document.createElement('div');
+    const sudokuGame = Games.CATS.find(c => c.id === 'logic').games.find(g => g.id === 'sudoku');
+    const chainGame = Games.CATS.find(c => c.id === 'nature').games.find(g => g.id === 'chain');
+    for (const age of [7, 8]) {
+      ok(sudokuGame.make(3, { age }).every(r => {
+        inspect.innerHTML = r.show;
+        const cells = [...inspect.querySelectorAll('td')];
+        const target = cells.findIndex(cell => cell.classList.contains('sudoku-target'));
+        const row = Math.floor(target / 4), col = target % 4;
+        const seen = cells.filter((_, i) => Math.floor(i / 4) === row || i % 4 === col ||
+          (Math.floor(i / 8) === Math.floor(row / 2) && Math.floor((i % 4) / 2) === Math.floor(col / 2)))
+          .map(cell => cell.textContent);
+        const available = ['1', '2', '3', '4'].filter(value => !seen.includes(value));
+        return cells.length === 16 && cells.filter(cell => cell.textContent === '·').length === (age === 8 ? 2 : 0)
+          && available.join() === r.choices.filter(choice => choice.ok).map(choice => choice.h).join()
+          && available.length === 1;
+      }), 'mini-sudoku : une seule réponse possible à ' + age + ' ans');
+    }
+    for (const language of ['fr', 'en']) {
+      I18n.setLang(language);
+      const chainAnswers = ['zebra', 'bird', 'grasshopper', 'grass'];
+      ok(chainGame.make(3, { age: 7 }).every((r, i) => {
+        inspect.innerHTML = r.show;
+        const choices = r.choices.filter(c => c.ok);
+        return inspect.querySelectorAll('li').length === 3 && inspect.querySelectorAll('.food-missing').length === 1
+          && choices.length === 1 && choices[0].say.text === I18n.t('chain.' + chainAnswers[i])
+          && r.choices.every(c => c.say.text && !c.say.text.startsWith('chain.'));
+      }), 'chaînes alimentaires : maillon manquant et réponses traduites en ' + language);
+    }
+    I18n.setLang('fr');
     for (const age of [6, 7, 8]) {
       const max = Rules.caps(age).calcMax;
       for (const id of ['add', 'sub']) {

@@ -166,6 +166,34 @@ window.Games = (function () {
     });
   }
   const POOL = ['mango', 'banana', 'apple', 'coconut', 'fish', 'sun'];
+  const DIGITS = [1, 2, 3, 4];
+  const SUDOKU = [0, 1, 2, 3, 2, 3, 0, 1, 1, 2, 3, 0, 3, 0, 1, 2];
+  function sudoku(n, ctx) {
+    return shuffle(SUDOKU.map((_, i) => i)).slice(0, 4).map(target => {
+      const values = shuffle(DIGITS);
+      const grid = SUDOKU.map(i => values[i]);
+      const answer = grid[target];
+      const row = Math.floor(target / 4), col = target % 4;
+      const hidden = new Set([target]);
+      if (ctx.age >= 8) {
+        // Un trou en plus dans la ligne et la colonne, avec des valeurs distinctes.
+        const inRow = pick(grid.map((_, i) => i).filter(i => i !== target && Math.floor(i / 4) === row));
+        const inCol = pick(grid.map((_, i) => i).filter(i => i !== target && i % 4 === col && grid[i] !== grid[inRow]));
+        hidden.add(inRow);
+        hidden.add(inCol);
+      }
+      const rows = Array.from({ length: 4 }, (_, y) => `<tr>${Array.from({ length: 4 }, (_, x) => {
+        const i = y * 4 + x;
+        return `<td${i === target ? ' class="sudoku-target"' : ''}>${i === target ? '?' : hidden.has(i) ? '·' : grid[i]}</td>`;
+      }).join('')}</tr>`).join('');
+      return {
+        type: 'choose',
+        ask: line('ask.sudoku'),
+        show: `<table class="sudoku-grid" aria-label="${t('sudoku.grid', { row: row + 1, col: col + 1 })}"><tbody>${rows}</tbody></table>`,
+        choices: shuffle(others(DIGITS, answer, nch(n, ctx))).map(value => ({ h: String(value), ok: value === answer }))
+      };
+    });
+  }
   const suite = (n, ctx) => cap(ctx).suiteLen.map(p => {
     const ks = shuffle(POOL).slice(0, p.length), seq = [];
     for (let i = 0; i < p.length * 2 - 1; i++) seq.push(ks[p.charCodeAt(i % p.length) - 65]);
@@ -209,6 +237,32 @@ window.Games = (function () {
       h: `<span class="tx">${t('science.' + value)}</span>`, ok: value === answer, say: line('science.' + value)
     }))
   }));
+  const FOOD_CHAINS = [
+    [['grass', 'zebra', 'lion'], 1, ['frog', 'lion', 'bird']],
+    [['leaf', 'caterpillar', 'bird'], 2, ['grass', 'leaf', 'zebra']],
+    [['grass', 'grasshopper', 'frog'], 1, ['zebra', 'grass', 'leaf']],
+    [['grass', 'zebra', 'lion'], 0, ['lion', 'zebra', 'bird']]
+  ];
+  const FOOD_ART = {
+    grass: '<path d="M21 86Q20 55 12 33q25 13 32 53M43 86Q37 44 53 15q10 34 8 71m-4 0q7-35 32-49-12 23-14 49" fill="#459d42"/><path d="M12 86h76" stroke="#94633e" stroke-width="6" stroke-linecap="round"/>',
+    caterpillar: '<path d="M11 76Q46 48 90 70" stroke="#44853a" stroke-width="8" stroke-linecap="round"/><g fill="#87c850" stroke="#397342" stroke-width="3"><circle cx="26" cy="59" r="11"/><circle cx="45" cy="53" r="12"/><circle cx="64" cy="53" r="12"/><circle cx="82" cy="47" r="13"/></g><path d="m78 34-3-10m11 10 5-9" stroke="#397342" stroke-width="3"/><circle cx="86" cy="45" r="2.5" fill="#192620"/>',
+    bird: '<path d="M14 55 6 75l25-8" fill="#35528a"/><ellipse cx="45" cy="61" rx="29" ry="19" fill="#528bdd"/><ellipse cx="39" cy="63" rx="16" ry="12" fill="#35528a"/><circle cx="69" cy="43" r="18" fill="#528bdd"/><path d="m84 43 15 5-16 8" fill="#f2a830"/><circle cx="74" cy="40" r="3" fill="#241b16"/>',
+    grasshopper: '<path d="M34 64 19 83m29-20 15-20 12 40M76 34l11-19m-16 16 5-19" fill="none" stroke="#497336" stroke-width="4" stroke-linecap="round"/><ellipse cx="43" cy="58" rx="29" ry="11" transform="rotate(-20 43 58)" fill="#83bf49"/><circle cx="73" cy="41" r="13" fill="#74ab40"/><circle cx="77" cy="38" r="3" fill="#19351e"/>',
+    frog: '<ellipse cx="50" cy="70" rx="33" ry="16" fill="#70ad43"/><circle cx="32" cy="40" r="15" fill="#83bc4c"/><circle cx="68" cy="40" r="15" fill="#83bc4c"/><ellipse cx="50" cy="55" rx="34" ry="23" fill="#83bc4c"/><circle cx="32" cy="39" r="4" fill="#24351d"/><circle cx="68" cy="39" r="4" fill="#24351d"/><path d="M37 57q13 13 26 0" fill="none" stroke="#35552c" stroke-width="3" stroke-linecap="round"/>'
+  };
+  const foodLabel = key => t('chain.' + key);
+  const foodFigure = key => `<span class="food-figure">${FOOD_ART[key] ? `<svg viewBox="0 0 100 100" aria-hidden="true">${FOOD_ART[key]}</svg>` : `<span aria-hidden="true">${dr(key)}</span>`}<span>${foodLabel(key)}</span></span>`;
+  const foodChain = (n, ctx) => FOOD_CHAINS.map(([chain, missing, wrong]) => {
+    const answer = chain[missing];
+    return {
+      type: 'choose',
+      ask: line('ask.chain'),
+      show: `<ol class="food-chain" role="list" aria-label="${t('chain.diagram')}">${chain.map((key, i) => `<li>${i === missing ? `<span class="food-missing" role="img" aria-label="${t('chain.missing')}">?</span>` : foodFigure(key)}</li>`).join('')}</ol>`,
+      choices: shuffle([answer, ...shuffle(wrong).slice(0, nch(n, ctx) - 1)]).map(key => ({
+        h: foodFigure(key), ok: key === answer, say: line('chain.' + key)
+      }))
+    };
+  });
   const flags = n => shuffle(Object.keys(V.countries)).slice(0, 4).map(id => ({
     type: 'choose', ask: line('ask.flag', { of: t('v.countryof.' + id), name: t('v.country.' + id), id }),
     choices: shuffle(others(Object.keys(V.countries), id, n)).map(c => ({ h: Art.flag(V.countries[c].flag), ok: c === id, say: line('say.country', { name: t('v.country.' + id), id }) }))
@@ -264,14 +318,14 @@ window.Games = (function () {
       G('add', 'apple', addG, 6), G('sub', 'banana', subG, 6), G('compare', 'star', compareG, 6), G('tables', 'coconut', tablesG, 7), G('money', 'sun', moneyG, 7), G('clock', 'sun', clockG, 7)] },
     { id: 'colors', c: 'coral', art: 'c_colors', games: [G('touch', 'c_colors', colourTouch), G('sort', 'leaf', colourSort, 4), G('mix', 'fish', colourMix, 5)] },
     { id: 'shapes', c: 'violet', art: 'c_shapes', games: [G('drag', 'c_shapes', shapeDrag), G('build', 'boat', assemble, 4), G('find', 'star', shapeFind), G('symmetry', 'c_shapes', symmetry, 6)] },
-    { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6)] },
+    { id: 'logic', c: 'leaf', art: 'c_logic', games: [G('suite', 'banana', suite, 4), G('odd', 'coconut', intrus, 4), G('puzzle', 'giraffe', swap, 4), G('memory', 'tortoise', memory('draw', 3)), G('numseq', 'banana', numseqG, 6), G('sudoku', 'c_logic', sudoku, 7)] },
     { id: 'art', c: 'turq', art: 'c_art', games: [G('soleil', 'sun', tpl('soleil')), G('case', 'house', tpl('case')), G('poisson', 'fish', tpl('poisson')), G('baobab', 'tree', tpl('baobab')),
       G('free', 'c_art', () => [{ type: 'free', ask: line('ask.free') }])] },
     { id: 'music', c: 'violet', art: 'c_music', games: [G('xylo', 'c_music', () => [{ type: 'xylo', ask: line('ask.xylo') }]), G('drum', 'drum', () => [{ type: 'drum', ask: line('ask.drum') }]),
       G('melody', 'star', (n, ctx) => cap(ctx).melody.map(len => ({ type: 'melody', len, ask: line('ask.melody') })), 4)] },
     { id: 'countries', c: 'coral', art: 'c_countries', games: [G('flags', 'c_countries', flags, 4), G('memory', 'star', memory('flag', 3), 4), G('capitals', 'c_countries', capitalsG, 7)] },
     { id: 'nature', c: 'leaf', art: 'c_nature', games: [G('animals', 'elephant', animals), G('habitat', 'parrot', habitat, 4), G('memory', 'monkey', memory('draw', 4), 4),
-      G('plants', 'leaf', science('plants'), 5), G('water', 'water', science('water'), 6)] },
+      G('plants', 'leaf', science('plants'), 5), G('water', 'water', science('water'), 6), G('chain', 'leaf', foodChain, 6)] },
     { id: 'stories', c: 'sun', art: 'c_stories', games: L.stories.map(s => ({ id: s.id, title: s.title, e: s.cover, lvl: 3, make: () => { const st = localStory(s); return [{ type: 'story', story: st, ask: { id: st.code + ':story.' + s.id + '.title', text: st.title, lang: st.speech } }]; } })) }
   ];
   // Histoires : version de la langue courante si elle existe (texte, titre, langue de la voix) ; sinon le français d'origine.

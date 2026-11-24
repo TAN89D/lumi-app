@@ -378,6 +378,17 @@ body.contrast .logo-img{filter:none}
 .melody-tools progress{width:min(100%,260px);height:14px;accent-color:var(--leafD)}
 .melody-tools .btn:disabled{opacity:.65}
 .word-parts{display:flex;align-items:center;gap:.35em;color:var(--ink2)}
+.sudoku-grid{border-collapse:collapse;border:3px solid var(--ink2);color:var(--ink2);background:#fff6df}
+.sudoku-grid td{width:clamp(2.3rem,12vw,3.4rem);height:clamp(2.3rem,12vw,3.4rem);border:1px solid #77608a;text-align:center;font-size:1.5rem;font-weight:800}
+.sudoku-grid td:nth-child(2){border-right:3px solid var(--ink2)}
+.sudoku-grid tr:nth-child(2) td{border-bottom:3px solid var(--ink2)}
+.sudoku-grid .sudoku-target{background:#ffc84a;text-decoration:underline}
+.food-chain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.65rem;width:min(100%,390px);padding:0;list-style:none}
+.food-chain li{position:relative;display:grid;place-items:center;min-width:0;min-height:88px;border-radius:14px;background:#fff6df;color:#482561;text-align:center}
+.food-chain li+li::before{content:"→";position:absolute;right:100%;width:1.65rem;font-size:1.3rem;font-weight:900}
+.food-figure{display:grid;justify-items:center;gap:3px;padding:5px;font-size:clamp(.9rem,3.5vw,1.3rem);font-weight:800;overflow-wrap:anywhere}
+.food-figure svg{display:block;width:clamp(32px,13vw,70px);height:auto}
+.food-missing{font-size:2rem;font-weight:900}
 .lumi .l-thought,.lumi .l-pause-sign{display:none}
 .lumi[data-state=think] .l-thought,.lumi[data-state=pause] .l-pause-sign{display:inline}
 .lumi[data-state=think] .l-head{transform:rotate(-7deg)}
