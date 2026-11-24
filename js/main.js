@@ -1,6 +1,6 @@
 // LUMI v3 : interface en panneaux de couleur, catégories libres, jeux variés, espace parent renforcé.
 (function () {
-  const APP_VERSION = '3.6.1';
+  const APP_VERSION = '3.6.2';
   const L = LUMI, C = L.config, CATS = Games.CATS, V = L.vocab;
   const $app = document.getElementById('app'), $modal = document.getElementById('modal');
   const t = (k, v) => I18n.t(k, v), line = (k, v) => I18n.line(k, v);
